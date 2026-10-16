@@ -876,6 +876,120 @@
       font-weight: 700;
       color: var(--text-main);
     }
+
+    .modal-box-lg {
+      max-width: 820px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-scrollable-body {
+      overflow-y: auto;
+      padding-right: 6px;
+      max-height: calc(90vh - 160px);
+    }
+
+    .modal-scrollable-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .modal-scrollable-body::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .import-tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .import-tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .import-tab-btn:hover {
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--cyan);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .import-tab-btn.active {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    .drop-zone {
+      border: 2px dashed rgba(6, 182, 212, 0.35);
+      border-radius: var(--radius-md);
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(6, 182, 212, 0.03);
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--cyan);
+      background: rgba(6, 182, 212, 0.08);
+      box-shadow: 0 0 20px var(--cyan-glow);
+    }
+
+    .template-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s;
+    }
+
+    .template-card:hover {
+      border-color: var(--cyan);
+      background: rgba(14, 20, 31, 0.95);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .solution-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.12) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .builder-doc-item {
+      background: rgba(14, 20, 31, 0.7);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -928,12 +1042,24 @@
     <section class="controls-panel">
       <div class="controls-left">
         <div class="select-group">
-          <label for="scenarioSelect">Technical Scenario</label>
+          <label for="scenarioSelect">Technical Scenario / Problem</label>
           <select id="scenarioSelect">
-            <option value="cloud_distributed">1. Cloud Distributed Engine (Raft → Paxos, NVMe Invalidation)</option>
-            <option value="auth_microservices">2. Microservices Auth (Redis Session → Ed25519 Stateless)</option>
-            <option value="distributed_database">3. Database Consensus (Synchronous 3-DC → Async Quorum)</option>
-            <option value="custom">Custom Ingestion Playground...</option>
+            <optgroup label="Core Benchmark Scenarios">
+              <option value="cloud_distributed">1. Cloud Distributed Engine (Raft → Paxos, NVMe Invalidation)</option>
+              <option value="auth_microservices">2. Microservices Auth (Redis Session → Ed25519 Stateless)</option>
+              <option value="distributed_database">3. Database Consensus (Synchronous 3-DC → Async Quorum)</option>
+            </optgroup>
+            <optgroup label="Industry Case Studies">
+              <option value="healthcare_hipaa">4. Healthcare HIPAA Cloud Migration (SAN Hardware → Cloud S3)</option>
+              <option value="drone_avionics">5. Autonomous Drone Avionics (Differential GPS → Optical Flow)</option>
+              <option value="fintech_ledger">6. Fintech Real-Time Ledger (2PC Synchronous → CQRS Event-Sourcing)</option>
+              <option value="ai_quantization">7. AI Inference Model Pipeline (FP16 Tensor → INT8 Edge NPU)</option>
+            </optgroup>
+            <optgroup id="userProblemsGroup" label="Your Imported Problems" style="display: none;">
+            </optgroup>
+            <optgroup label="Custom Playground">
+              <option value="custom">Custom Ingestion Playground...</option>
+            </optgroup>
           </select>
         </div>
 
@@ -948,6 +1074,11 @@
       </div>
 
       <div class="controls-right">
+        <button id="importProblemBtn" class="btn btn-secondary" type="button" style="border-color: rgba(6,182,212,0.4); color: var(--cyan); background: rgba(6,182,212,0.06);" title="Import custom problem (JSON, file, or paste text)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Import Problem</span>
+        </button>
+
         <button id="runAuditBtn" class="btn btn-primary" type="button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           <span id="runBtnLabel">Run Intelligence Audit</span>
@@ -959,6 +1090,25 @@
         </button>
       </div>
     </section>
+
+    <!-- Problem Solved Banner -->
+    <div id="solutionBanner" class="solution-banner" style="display: none;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--emerald); color: #070a10; font-weight: 800; font-size: 13px;">✓</span>
+          <strong id="solutionBannerTitle" style="font-size: 15px; color: #f8fafc;">Problem Solved</strong>
+        </div>
+        <p id="solutionBannerDesc" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+          Evidence propositions deconstructed, cross-revision conflicts resolved, and broken foundations flagged.
+        </p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span class="pill" id="solutionConflictsPill" style="background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3);">0 Contradictions</span>
+        <span class="pill" id="solutionOrphansPill" style="background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3);">0 Orphaned</span>
+        <button id="viewSolutionConflictsBtn" class="btn btn-secondary" type="button" style="padding: 4px 10px; font-size: 11px;">View Contradictions</button>
+        <button id="viewSolutionOrphansBtn" class="btn btn-secondary" type="button" style="padding: 4px 10px; font-size: 11px;">View Broken Chains</button>
+      </div>
+    </div>
 
     <!-- Status Notice -->
     <div id="statusNotice" style="margin-bottom: 20px; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
@@ -1103,7 +1253,10 @@
       <div class="panel">
         <div class="panel-header">
           <h2>Ingested Source Documents</h2>
-          <button class="btn btn-secondary" id="addNewDocBtn" style="padding: 7px 14px; font-size: 12px;">+ Add Custom Document</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="docsImportProblemBtn" style="padding: 7px 14px; font-size: 12px;"><span style="font-size: 13px;">⚡</span> Import Problem</button>
+            <button class="btn btn-secondary" id="addNewDocBtn" style="padding: 7px 14px; font-size: 12px;">+ Add Custom Document</button>
+          </div>
         </div>
         <div id="customDocForm" style="display: none; background: rgba(14, 20, 31, 0.95); border: 1px solid var(--border-focus); border-radius: var(--radius-md); padding: 20px; margin: 16px 24px;">
           <h3 style="font-size: 16px; margin-bottom: 14px; color: var(--cyan);">Add Source Specification Document</h3>
@@ -1200,6 +1353,119 @@
             <button class="btn btn-primary" id="saveApiUrlBtn" type="button">Connect &amp; Test</button>
           </div>
           <div id="apiModalStatus" style="margin-top: 14px; font-size: 13px;" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Problem Hub Modal -->
+    <div id="importProblemModal" class="modal-overlay" style="display: none;">
+      <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 18px;">⚡</div>
+            <div>
+              <h3 style="margin: 0; font-size: 17px;">Import Custom Problem &amp; Specifications</h3>
+              <p style="margin: 3px 0 0 0; font-size: 12px; color: var(--text-muted);">Ingest multi-version technical specs, deconstruct atomic claims, and solve cross-document invalidations.</p>
+            </div>
+          </div>
+          <button class="close-btn" id="closeImportModalBtn">&times;</button>
+        </div>
+
+        <!-- Import Tabs Navigation -->
+        <div class="import-tabs-nav">
+          <button class="import-tab-btn active" data-tab="uploadTab">📁 File Upload (.json / .txt / .md)</button>
+          <button class="import-tab-btn" data-tab="pasteTab">📝 Paste Specs / Text</button>
+          <button class="import-tab-btn" data-tab="builderTab">🛠️ Interactive Document Builder</button>
+          <button class="import-tab-btn" data-tab="templatesTab">🏢 Industry Problem Templates</button>
+        </div>
+
+        <div class="modal-body" style="padding-top: 14px;">
+          <!-- Tab 1: File Upload -->
+          <div id="uploadTab" class="import-tab-pane active">
+            <div class="drop-zone" id="problemDropZone">
+              <div style="font-size: 38px; margin-bottom: 10px; color: var(--cyan);">📥</div>
+              <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Drag &amp; Drop your problem specification file here</div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Supports Claim Graph JSON format, Markdown (.md), or raw text (.txt) with multiple revisions</div>
+              <label for="problemFileInput" class="btn btn-secondary" style="cursor: pointer; display: inline-block;">
+                Browse Files
+              </label>
+              <input type="file" id="problemFileInput" accept=".json,.txt,.md" style="display: none;">
+            </div>
+            <div id="fileUploadPreview" style="margin-top: 14px; display: none;">
+              <div style="font-size: 13px; color: var(--cyan); font-weight: 600; margin-bottom: 6px;" id="fileUploadSummary"></div>
+              <pre id="fileUploadContentPreview" style="max-height: 140px; overflow-y: auto; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-sm); font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);"></pre>
+            </div>
+          </div>
+
+          <!-- Tab 2: Paste Specs -->
+          <div id="pasteTab" class="import-tab-pane">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 13px; color: var(--text-muted);">Paste multi-revision text or architecture specs (separate revisions with <code style="color: var(--cyan);">---</code>):</label>
+              <button class="btn btn-secondary" id="loadSamplePasteBtn" type="button" style="padding: 4px 10px; font-size: 11px;">Load Sample Markdown</button>
+            </div>
+            <textarea id="pasteSpecTextarea" placeholder="Document: DOC-1&#10;Version: 1.0.0&#10;Date: 2025-01-10&#10;Title: Initial Baseline Architecture&#10;The cluster size is strictly limited to 16 nodes due to Raft consensus constraints.&#10;&#10;---&#10;&#10;Document: DOC-2&#10;Version: 2.0.0&#10;Date: 2025-06-15&#10;Title: Scaled Engine Migration&#10;The cluster size scales to 64 nodes through a leaderless Paxos ring.&#10;&#10;---&#10;&#10;Document: AUDIT-1&#10;Version: 1.0.0&#10;Date: 2025-07-01&#10;Title: SLA Latency Guarantee&#10;Sub-5ms write latency is guaranteed as a direct consequence of 16 nodes cluster size." style="width: 100%; height: 210px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; resize: vertical; margin-bottom: 8px;"></textarea>
+          </div>
+
+          <!-- Tab 3: Interactive Card Builder -->
+          <div id="builderTab" class="import-tab-pane">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-size: 13px; color: var(--text-muted);">Assemble specification revisions interactively:</span>
+              <button class="btn btn-secondary" id="addBuilderDocCardBtn" type="button" style="padding: 5px 12px; font-size: 12px;">+ Add Document Revision</button>
+            </div>
+            <div id="builderDocCards" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
+              <!-- Dynamic Document Cards go here -->
+            </div>
+          </div>
+
+          <!-- Tab 4: Industry Templates -->
+          <div id="templatesTab" class="import-tab-pane">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Select an enterprise problem template to instantly populate and solve:</div>
+            <div class="template-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+              <div class="template-card" data-template-id="healthcare_hipaa">
+                <div style="font-size: 20px; margin-bottom: 6px;">🏥</div>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 4px;">Healthcare HIPAA Audit</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">On-premise SAN with hardware AES-256 vs Cloud S3 Object Storage, invalidating zero third-party transmission guarantee.</div>
+              </div>
+              <div class="template-card" data-template-id="drone_avionics">
+                <div style="font-size: 20px; margin-bottom: 6px;">🛸</div>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 4px;">Drone Autonomous Avionics</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Dual differential GPS receivers vs Optical visual odometry, invalidating sub-centimeter GPS hovering guarantee.</div>
+              </div>
+              <div class="template-card" data-template-id="fintech_ledger">
+                <div style="font-size: 20px; margin-bottom: 6px;">💳</div>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 4px;">High-Frequency Fintech Ledger</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Strict 2PC synchronous locking vs Event-sourced CQRS ledger, invalidating immediate balance finality guarantee.</div>
+              </div>
+              <div class="template-card" data-template-id="ai_quantization">
+                <div style="font-size: 20px; margin-bottom: 6px;">🧠</div>
+                <div style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 4px;">LLM Inference Quantization</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">16-bit FP16 precision weights vs 8-bit INT8 quantized weights, invalidating zero perplexity degradation guarantee.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem Metadata Inputs -->
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-subtle); display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Problem Title / Scenario Name</label>
+              <input type="text" id="importProblemTitleInput" placeholder="e.g. Distributed Database Cache Invalidation Migration" style="width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Problem Identifier</label>
+              <input type="text" id="importProblemIdInput" placeholder="custom_problem_1" style="width: 100%; font-family: var(--font-mono);">
+            </div>
+          </div>
+
+          <!-- Actions Footer -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+            <div id="importProblemStatus" style="font-size: 12px; color: var(--amber); max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="cancelImportProblemBtn" type="button">Cancel</button>
+              <button class="btn btn-primary" id="executeImportAndSolveBtn" type="button" style="box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);">
+                <span>⚡</span> Ingest &amp; Solve Problem
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1309,8 +1575,129 @@
             content: "Zero data loss recovery point objective (RPO=0) is guaranteed as a direct consequence of synchronous replication across 3 physical datacenters."
           }
         ]
+      },
+      healthcare_hipaa: {
+        id: "healthcare_hipaa",
+        title: "Healthcare HIPAA Cloud Migration",
+        description: "Migration from on-premise dedicated SAN storage with hardware AES-256 to public cloud S3 object storage, invalidating HIPAA zero third-party transmission guarantee.",
+        documents: [
+          {
+            doc_id: "HIPAA-V1",
+            title: "PHI Data Storage & Isolation Policy",
+            version: "1.0.0",
+            timestamp: "2024-05-10",
+            content: "All protected health information (PHI) must be stored exclusively on on-premise dedicated SAN hardware volumes.\n\nDirect internet access and third-party cloud routing are strictly forbidden."
+          },
+          {
+            doc_id: "HIPAA-V2",
+            title: "Scalable EHR Cloud Lake Architecture",
+            version: "2.0.0",
+            timestamp: "2025-02-14",
+            content: "All protected health information is transitioned to multi-tenant public cloud S3 object storage buckets.\n\nEHR ingestion pipelines execute through cloud-managed serverless microservices."
+          },
+          {
+            doc_id: "HIPAA-AUDIT",
+            title: "Annual Compliance Certification",
+            version: "1.1.0",
+            timestamp: "2025-03-01",
+            content: "Zero third-party network transmission is guaranteed as a direct consequence of on-premise dedicated SAN hardware volumes."
+          }
+        ]
+      },
+      drone_avionics: {
+        id: "drone_avionics",
+        title: "Autonomous Drone Avionics System",
+        description: "Evolution from dual differential GPS receivers to optical camera visual odometry, invalidating sub-centimeter GPS hovering guarantee.",
+        documents: [
+          {
+            doc_id: "AVIONICS-V1",
+            title: "Flight Controller Positioning Standard",
+            version: "1.0.0",
+            timestamp: "2024-06-01",
+            content: "Primary navigation telemetry requires dual differential GPS receivers with active satellite RTK correction.\n\nFlight hold stabilization relies directly on real-time orbital satellite signals."
+          },
+          {
+            doc_id: "AVIONICS-V2",
+            title: "GPS-Denied Subterranean Navigation Spec",
+            version: "2.0.0",
+            timestamp: "2025-01-20",
+            content: "Primary navigation telemetry relies exclusively on downward optical camera visual odometry and lidar point-clouds.\n\nSatellite GPS antennas are disabled to preserve transceiver payload power."
+          },
+          {
+            doc_id: "AVIONICS-AUDIT",
+            title: "Flight Certification & Safety Envelope",
+            version: "1.1.0",
+            timestamp: "2025-02-10",
+            content: "Sub-centimeter position hold is guaranteed as a direct consequence of dual differential GPS receivers."
+          }
+        ]
+      },
+      fintech_ledger: {
+        id: "fintech_ledger",
+        title: "Fintech High-Frequency Ledger",
+        description: "Transition from strict two-phase commit (2PC) synchronous locking to asynchronous event-sourced CQRS ledger, invalidating immediate balance finality guarantee.",
+        documents: [
+          {
+            doc_id: "LEDGER-V1",
+            title: "Core Banking Transaction Engine",
+            version: "1.0.0",
+            timestamp: "2024-04-10",
+            content: "All account balance updates execute under strict two-phase commit synchronous database table locks.\n\nTransaction commit requires atomic mutual exclusion across distributed ledger partitions."
+          },
+          {
+            doc_id: "LEDGER-V2",
+            title: "Asynchronous High-Throughput CQRS Ledger",
+            version: "2.0.0",
+            timestamp: "2025-04-01",
+            content: "All account balance updates stream through an asynchronous event-sourced CQRS ledger with eventual reconciliation.\n\nDatabase writes operate lock-free via append-only event logs."
+          },
+          {
+            doc_id: "LEDGER-AUDIT",
+            title: "Regulatory Financial Audit Report",
+            version: "1.2.0",
+            timestamp: "2025-05-01",
+            content: "Absolute immediate balance finality is guaranteed as a direct consequence of strict two-phase commit synchronous database table locks."
+          }
+        ]
+      },
+      ai_quantization: {
+        id: "ai_quantization",
+        title: "LLM Inference Quantization Pipeline",
+        description: "Migration from uncompressed 16-bit FP16 precision weights to 8-bit INT8 quantized weights, invalidating zero perplexity degradation conclusion.",
+        documents: [
+          {
+            doc_id: "MODEL-V1",
+            title: "Foundation Model Serving Infrastructure",
+            version: "1.0.0",
+            timestamp: "2024-09-01",
+            content: "Model inference executes exclusively using full 16-bit FP16 precision floating point matrix weights.\n\nTensor computations preserve full uncompressed mantissa fidelity without integer quantization."
+          },
+          {
+            doc_id: "MODEL-V2",
+            title: "Edge Model Weight Quantization Protocol",
+            version: "2.0.0",
+            timestamp: "2025-03-10",
+            content: "Model inference executes using aggressive 8-bit INT8 quantized integer weight tensors for edge efficiency.\n\nWeights are scaled and clamped into discrete 8-bit registers."
+          },
+          {
+            doc_id: "MODEL-AUDIT",
+            title: "Perplexity & Accuracy Validation Benchmark",
+            version: "1.1.0",
+            timestamp: "2025-03-25",
+            content: "Zero perplexity degradation across benchmark datasets is guaranteed as a direct consequence of full 16-bit FP16 precision floating point matrix weights."
+          }
+        ]
       }
     };
+
+    // User-Imported Problems Persistence
+    let userProblems = {};
+    try {
+      const savedProbs = localStorage.getItem("claimgraph_user_problems");
+      if (savedProbs) userProblems = JSON.parse(savedProbs);
+    } catch (e) {
+      console.warn("Could not load user problems from localStorage:", e);
+    }
 
     // DOM Elements
     const runAuditBtn = document.getElementById("runAuditBtn");
@@ -1343,6 +1730,34 @@
     const orphansList = document.getElementById("orphansList");
     const claimsList = document.getElementById("claimsList");
     const docsList = document.getElementById("docsList");
+
+    // Problem Import Hub & Solution Banner Elements
+    const importProblemBtn = document.getElementById("importProblemBtn");
+    const docsImportProblemBtn = document.getElementById("docsImportProblemBtn");
+    const importProblemModal = document.getElementById("importProblemModal");
+    const closeImportModalBtn = document.getElementById("closeImportModalBtn");
+    const cancelImportProblemBtn = document.getElementById("cancelImportProblemBtn");
+    const executeImportAndSolveBtn = document.getElementById("executeImportAndSolveBtn");
+    const importProblemTitleInput = document.getElementById("importProblemTitleInput");
+    const importProblemIdInput = document.getElementById("importProblemIdInput");
+    const importProblemStatus = document.getElementById("importProblemStatus");
+    const userProblemsGroup = document.getElementById("userProblemsGroup");
+    const solutionBanner = document.getElementById("solutionBanner");
+    const solutionBannerTitle = document.getElementById("solutionBannerTitle");
+    const solutionBannerDesc = document.getElementById("solutionBannerDesc");
+    const solutionConflictsPill = document.getElementById("solutionConflictsPill");
+    const solutionOrphansPill = document.getElementById("solutionOrphansPill");
+    const viewSolutionConflictsBtn = document.getElementById("viewSolutionConflictsBtn");
+    const viewSolutionOrphansBtn = document.getElementById("viewSolutionOrphansBtn");
+    const problemDropZone = document.getElementById("problemDropZone");
+    const problemFileInput = document.getElementById("problemFileInput");
+    const fileUploadPreview = document.getElementById("fileUploadPreview");
+    const fileUploadSummary = document.getElementById("fileUploadSummary");
+    const fileUploadContentPreview = document.getElementById("fileUploadContentPreview");
+    const pasteSpecTextarea = document.getElementById("pasteSpecTextarea");
+    const loadSamplePasteBtn = document.getElementById("loadSamplePasteBtn");
+    const addBuilderDocCardBtn = document.getElementById("addBuilderDocCardBtn");
+    const builderDocCards = document.getElementById("builderDocCards");
 
     // Canvas
     const canvas = document.getElementById("graphCanvas");
@@ -1379,11 +1794,15 @@
 
       const topicKeywords = {
         "Cluster Size": ["cluster size", "nodes", "raft", "paxos", "ring"],
-        "Storage Architecture": ["storage", "nvme", "solid-state", "object storage", "persistence", "state"],
+        "Storage Architecture": ["storage", "nvme", "solid-state", "object storage", "persistence", "state", "san"],
         "Latency Performance": ["latency", "write latency", "sub-5ms", "throughput", "response time"],
         "Authentication": ["jwt", "oauth", "token", "session", "ed25519", "auth", "redis", "revocation"],
         "Replication": ["replica", "quorum", "consensus", "replication", "sync", "synchronous", "asynchronous", "rpo"],
-        "Data Durability": ["durability", "integrity", "rpo", "data loss", "disaster recovery"]
+        "Data Durability": ["durability", "integrity", "rpo", "data loss", "disaster recovery"],
+        "Healthcare & Compliance": ["hipaa", "phi", "san", "hardware", "patient", "ehr", "transmission"],
+        "Avionics & Navigation": ["gps", "satellite", "rtk", "optical", "odometry", "lidar", "telemetry"],
+        "Financial Ledger": ["ledger", "2pc", "two-phase", "cqrs", "event-sourced", "commit", "balance"],
+        "AI & Quantization": ["fp16", "int8", "quantization", "quantized", "weights", "perplexity", "tensor"]
       };
 
       sentences.forEach((stmt, i) => {
@@ -1425,22 +1844,35 @@
     }
 
     function autoLinkDependencies(claims) {
+      const stopwords = new Set([
+        "the", "is", "a", "an", "to", "of", "and", "in", "on", "all",
+        "for", "due", "are", "be", "this", "that", "with", "from", "must", "run",
+        "system", "direct", "result", "consequence", "guaranteed", "as", "across"
+      ]);
+      const domainKeywords = [
+        "nvme", "storage", "san", "hardware", "nodes", "redis", "session",
+        "synchronous", "datacenter", "gps", "satellite", "two-phase", "2pc",
+        "fp16", "precision", "lock", "quorum", "paxos", "raft", "eventual", "asynchronous",
+        "optical", "vision", "camera", "int8", "quantized", "s3", "cloud", "cqrs"
+      ];
+
       for (const cid in claims) {
         const claim = claims[cid];
         const stmtLow = claim.statement.toLowerCase();
-        if (claim.type === "CONCLUSION" || stmtLow.includes("consequence of") || stmtLow.includes("direct result") || stmtLow.includes("guaranteed as")) {
+        if (claim.type === "CONCLUSION" || ["consequence of", "direct result", "therefore", "guaranteed as", "achieves", "yields", "ensures"].some(m => stmtLow.includes(m))) {
+          const conclWords = (stmtLow.match(/\b\w{3,}\b/g) || []).filter(w => !stopwords.has(w));
+          const conclSet = new Set(conclWords);
+
           for (const pid in claims) {
             if (pid !== cid && claims[pid].type !== "CONCLUSION") {
               const pLow = claims[pid].statement.toLowerCase();
-              if (
-                (stmtLow.includes("nvme") && pLow.includes("nvme")) ||
-                (stmtLow.includes("storage") && pLow.includes("storage")) ||
-                (stmtLow.includes("nodes") && pLow.includes("nodes")) ||
-                (stmtLow.includes("redis") && pLow.includes("redis")) ||
-                (stmtLow.includes("session") && pLow.includes("session")) ||
-                (stmtLow.includes("synchronous") && pLow.includes("synchronous")) ||
-                (stmtLow.includes("datacenter") && pLow.includes("datacenter"))
-              ) {
+              const premWords = (pLow.match(/\b\w{3,}\b/g) || []).filter(w => !stopwords.has(w));
+              let overlap = 0;
+              for (const w of premWords) {
+                if (conclSet.has(w)) overlap++;
+              }
+              const hasDomainMatch = domainKeywords.some(kw => stmtLow.includes(kw) && pLow.includes(kw));
+              if (overlap >= 2 || hasDomainMatch) {
                 if (!claim.dependencies.includes(pid)) {
                   claim.dependencies.push(pid);
                 }
@@ -1479,11 +1911,11 @@
         }
       }
 
-      // 2. Storage topology conflict
-      if ((stA.includes("nvme") || stA.includes("local")) && (stB.includes("object storage") || stB.includes("network-attached"))) {
-        conflictReasons.push("Storage topology shift: Local NVMe solid-state storage conflicts with network-attached object storage");
-      } else if ((stA.includes("object storage") || stA.includes("network-attached")) && (stB.includes("nvme") || stB.includes("local"))) {
-        conflictReasons.push("Storage topology shift: Network-attached object storage conflicts with local NVMe solid-state storage");
+      // 2. Storage topology conflict (local NVMe/SAN vs cloud/object storage/S3)
+      if ((stA.includes("nvme") || stA.includes("local") || stA.includes("san")) && (stB.includes("object storage") || stB.includes("network-attached") || stB.includes("cloud") || stB.includes("s3"))) {
+        conflictReasons.push("Storage topology shift: Local NVMe/SAN hardware storage conflicts with network-attached cloud object storage");
+      } else if ((stA.includes("object storage") || stA.includes("network-attached") || stA.includes("cloud") || stA.includes("s3")) && (stB.includes("nvme") || stB.includes("local") || stB.includes("san"))) {
+        conflictReasons.push("Storage topology shift: Network-attached cloud object storage conflicts with local NVMe/SAN hardware storage");
       }
 
       // 3. Consensus protocol conflict
@@ -1510,6 +1942,34 @@
       // 6. Generic scaling conflict
       if (stA.includes("strictly limited to") && stB.includes("scales to")) {
         conflictReasons.push("Scaling constraint conflict: Strict node limit contradicted by dynamic scaling ring");
+      }
+
+      // 7. Navigation / Avionics (GPS vs Optical vision / Lidar)
+      if (stA.includes("gps") && (stB.includes("optical") || stB.includes("vision") || stB.includes("lidar"))) {
+        conflictReasons.push("Navigation telemetry divergence: Differential GPS navigation conflicts with vision/lidar odometry");
+      } else if ((stA.includes("optical") || stA.includes("vision") || stA.includes("lidar")) && stB.includes("gps")) {
+        conflictReasons.push("Navigation telemetry divergence: Vision/lidar odometry conflicts with differential GPS navigation");
+      }
+
+      // 8. Model precision (16-bit FP16 vs 8-bit INT8 quantized)
+      if ((stA.includes("fp16") || stA.includes("16-bit")) && (stB.includes("int8") || stB.includes("8-bit") || stB.includes("quantized"))) {
+        conflictReasons.push("Mathematical precision divergence: 16-bit FP16 precision conflicts with 8-bit quantized execution");
+      } else if ((stA.includes("int8") || stA.includes("8-bit") || stA.includes("quantized")) && (stB.includes("fp16") || stB.includes("16-bit"))) {
+        conflictReasons.push("Mathematical precision divergence: 8-bit quantized execution conflicts with 16-bit FP16 precision");
+      }
+
+      // 9. Ledger persistence (Two-phase commit 2PC vs Event-sourced CQRS)
+      if ((stA.includes("two-phase") || stA.includes("2pc")) && (stB.includes("event-sourced") || stB.includes("cqrs"))) {
+        conflictReasons.push("Ledger persistence divergence: Strict two-phase commit synchronous locking conflicts with asynchronous event-sourced CQRS");
+      } else if ((stA.includes("event-sourced") || stA.includes("cqrs")) && (stB.includes("two-phase") || stB.includes("2pc"))) {
+        conflictReasons.push("Ledger persistence divergence: Asynchronous event-sourced CQRS conflicts with strict two-phase commit locking");
+      }
+
+      // 10. Semantic Antonym / Invariant inversion (Custom problem catch-all)
+      if ((stA.includes("strictly forbidden") || stA.includes("disallowed")) && (stB.includes("allowed") || stB.includes("permitted") || stB.includes("transitioned to"))) {
+        conflictReasons.push("Operational constraint conflict: Strictly forbidden action contradicted by permitted operational policy");
+      } else if ((stA.includes("allowed") || stA.includes("permitted") || stA.includes("transitioned to")) && (stB.includes("strictly forbidden") || stB.includes("disallowed"))) {
+        conflictReasons.push("Operational constraint conflict: Permitted operational policy contradicted by strictly forbidden rule");
       }
 
       if (conflictReasons.length > 0) {
@@ -1658,6 +2118,8 @@
 
       if (scenarioId === "custom" && customDocs.length > 0) {
         docs = customDocs;
+      } else if (userProblems[scenarioId]) {
+        docs = userProblems[scenarioId].documents;
       } else if (BUILTIN_SCENARIOS[scenarioId]) {
         docs = BUILTIN_SCENARIOS[scenarioId].documents;
       } else {
@@ -1790,7 +2252,9 @@
       const mode = modeSelect.value;
       const payload = { mode };
 
-      if (scenario !== "custom") {
+      if (userProblems[scenario]) {
+        payload.documents = userProblems[scenario].documents;
+      } else if (scenario !== "custom") {
         payload.scenario_id = scenario;
       } else if (customDocuments.length > 0) {
         payload.documents = customDocuments;
@@ -1824,6 +2288,19 @@
 
       currentAuditData = auditData;
       renderResults(auditData);
+
+      // Update Problem Solution Banner
+      const activeProblem = userProblems[scenario] || BUILTIN_SCENARIOS[scenario];
+      if (activeProblem && solutionBanner) {
+        solutionBanner.style.display = "flex";
+        solutionBannerTitle.textContent = `Problem Solved: ${activeProblem.title}`;
+        solutionBannerDesc.textContent = `${auditData.summary.total_claims} atomic propositions deconstructed. Found ${auditData.summary.contradicted_claims} temporal contradictions across revisions and ${auditData.summary.orphaned_conclusions} broken dependency chains.`;
+        solutionConflictsPill.textContent = `${auditData.summary.contradicted_claims} Contradictions`;
+        solutionOrphansPill.textContent = `${auditData.summary.orphaned_conclusions} Orphaned Conclusions`;
+      } else if (solutionBanner) {
+        solutionBanner.style.display = "none";
+      }
+
       statusMessage.textContent = `Audit completed successfully via ${auditData.engine_used}.`;
       statusMessage.style.color = "var(--emerald)";
       executionTime.textContent = `Execution time: ${auditData.execution_time_seconds}s`;
@@ -2447,6 +2924,503 @@
       URL.revokeObjectURL(url);
     });
 
+    // --- MAIN TAB HELPER ---
+    function switchMainTab(tabId) {
+      const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+      if (targetBtn) targetBtn.click();
+    }
+    if (viewSolutionConflictsBtn) {
+      viewSolutionConflictsBtn.addEventListener("click", () => switchMainTab("conflictsTab"));
+    }
+    if (viewSolutionOrphansBtn) {
+      viewSolutionOrphansBtn.addEventListener("click", () => switchMainTab("orphansTab"));
+    }
+
+    // --- POPULATE USER PROBLEMS IN SCENARIO SELECTOR ---
+    function updateScenarioSelect(selectedId = null) {
+      if (!userProblemsGroup) return;
+      userProblemsGroup.innerHTML = "";
+      const ids = Object.keys(userProblems);
+
+      if (ids.length === 0) {
+        userProblemsGroup.style.display = "none";
+      } else {
+        userProblemsGroup.style.display = "";
+        ids.forEach((id, idx) => {
+          const prob = userProblems[id];
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = `★ ${prob.title || "Custom Problem " + (idx + 1)}`;
+          userProblemsGroup.appendChild(opt);
+        });
+      }
+
+      if (selectedId) {
+        scenarioSelect.value = selectedId;
+      }
+    }
+
+    // --- CUSTOM PROBLEM IMPORT HUB LOGIC ---
+    let activeImportTab = "uploadTab";
+    let importedFileDocuments = null;
+    let selectedTemplateId = null;
+
+    function openImportModal(preferredTab = "uploadTab") {
+      if (!importProblemModal) return;
+      importProblemModal.style.display = "flex";
+      importProblemStatus.textContent = "";
+
+      // Switch to preferred tab
+      const tabBtn = document.querySelector(`.import-tab-btn[data-tab="${preferredTab}"]`);
+      if (tabBtn) tabBtn.click();
+
+      // Ensure builder cards are seeded
+      if (builderDocCards && builderDocCards.children.length === 0) {
+        initBuilderCards();
+      }
+
+      if (!importProblemIdInput.value) {
+        importProblemIdInput.value = `custom_prob_${Date.now().toString().slice(-6)}`;
+      }
+    }
+
+    function closeImportModal() {
+      if (importProblemModal) importProblemModal.style.display = "none";
+    }
+
+    if (importProblemBtn) importProblemBtn.addEventListener("click", () => openImportModal("uploadTab"));
+    if (docsImportProblemBtn) docsImportProblemBtn.addEventListener("click", () => openImportModal("builderTab"));
+    if (closeImportModalBtn) closeImportModalBtn.addEventListener("click", closeImportModal);
+    if (cancelImportProblemBtn) cancelImportProblemBtn.addEventListener("click", closeImportModal);
+
+    if (importProblemModal) {
+      importProblemModal.addEventListener("click", (e) => {
+        if (e.target === importProblemModal) closeImportModal();
+      });
+    }
+
+    // Modal Tabs Navigation
+    document.querySelectorAll(".import-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".import-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".import-tab-pane").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        const tabId = btn.getAttribute("data-tab");
+        activeImportTab = tabId;
+        const targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add("active");
+      });
+    });
+
+    // Parse problem text / markdown into structured documents
+    function parseProblemText(rawText, fallbackName = "Custom Imported Problem") {
+      const trimmed = (rawText || "").trim();
+      if (!trimmed) {
+        return { title: fallbackName, description: "", documents: [] };
+      }
+
+      // 1. Attempt JSON parsing
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return {
+              title: fallbackName,
+              description: "Imported document list via JSON.",
+              documents: parsed.map((d, i) => ({
+                doc_id: d.doc_id || `DOC-${i + 1}`,
+                title: d.title || `Document ${i + 1}`,
+                version: d.version || "1.0.0",
+                timestamp: d.timestamp || new Date(Date.now() - (parsed.length - i) * 86400000).toISOString().slice(0, 10),
+                content: d.content || d.text || ""
+              }))
+            };
+          } else if (parsed.documents && Array.isArray(parsed.documents)) {
+            return {
+              title: parsed.title || fallbackName,
+              description: parsed.description || "Imported scenario via JSON.",
+              documents: parsed.documents.map((d, i) => ({
+                doc_id: d.doc_id || `DOC-${i + 1}`,
+                title: d.title || `Document ${i + 1}`,
+                version: d.version || "1.0.0",
+                timestamp: d.timestamp || new Date(Date.now() - (parsed.documents.length - i) * 86400000).toISOString().slice(0, 10),
+                content: d.content || d.text || ""
+              }))
+            };
+          }
+        } catch (e) {
+          // Fall through to markdown parser
+        }
+      }
+
+      // 2. Delimiter-based specification parsing
+      const sections = trimmed.split(/\n\s*(?:---+|===+|(?=###?\s+Document:))\s*\n/).map(s => s.trim()).filter(Boolean);
+      const docs = [];
+
+      sections.forEach((sec, idx) => {
+        const lines = sec.split("\n");
+        let docId = `DOC-${idx + 1}`;
+        let docTitle = `Revision Specification ${idx + 1}`;
+        let docVersion = `1.${idx}.0`;
+        let docDate = new Date(Date.now() - (sections.length - idx) * 30 * 86400000).toISOString().slice(0, 10);
+        const contentLines = [];
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          const matchDoc = trimmedLine.match(/^(?:###?\s*)?(?:Document|Doc\s*ID):\s*(.+)$/i);
+          const matchTitle = trimmedLine.match(/^(?:###?\s*)?(?:Title|Header):\s*(.+)$/i);
+          const matchVer = trimmedLine.match(/^(?:###?\s*)?(?:Version|Ver|v):\s*(.+)$/i);
+          const matchDate = trimmedLine.match(/^(?:###?\s*)?(?:Date|Timestamp|Time):\s*(.+)$/i);
+
+          if (matchDoc) {
+            docId = matchDoc[1].trim();
+          } else if (matchTitle) {
+            docTitle = matchTitle[1].trim();
+          } else if (matchVer) {
+            docVersion = matchVer[1].trim();
+          } else if (matchDate) {
+            docDate = matchDate[1].trim();
+          } else if (trimmedLine.startsWith("# ") && !docTitle.includes("Revision")) {
+            docTitle = trimmedLine.replace(/^#+\s*/, "").trim();
+          } else {
+            contentLines.push(line);
+          }
+        }
+
+        const content = contentLines.join("\n").trim();
+        if (content) {
+          docs.push({
+            doc_id: docId,
+            title: docTitle,
+            version: docVersion,
+            timestamp: docDate,
+            content: content
+          });
+        }
+      });
+
+      // 3. Fallback: split by multiple paragraphs if no delimiter
+      if (docs.length <= 1 && trimmed.includes("\n\n")) {
+        const paras = trimmed.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+        if (paras.length >= 2) {
+          return {
+            title: fallbackName,
+            description: "Custom multi-clause problem specification.",
+            documents: [
+              {
+                doc_id: "SPEC-V1",
+                title: "Baseline Specification Clause",
+                version: "1.0.0",
+                timestamp: "2025-01-01",
+                content: paras[0]
+              },
+              {
+                doc_id: "SPEC-V2",
+                title: "Updated Specification Clause",
+                version: "2.0.0",
+                timestamp: "2025-06-01",
+                content: paras.slice(1).join("\n\n")
+              }
+            ]
+          };
+        }
+      }
+
+      return {
+        title: fallbackName,
+        description: "Imported specification problem.",
+        documents: docs.length > 0 ? docs : [
+          {
+            doc_id: "DOC-1",
+            title: fallbackName,
+            version: "1.0.0",
+            timestamp: new Date().toISOString().slice(0, 10),
+            content: trimmed
+          }
+        ]
+      };
+    }
+
+    // --- FILE UPLOAD & DROP ZONE ---
+    function handleFileSelected(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const result = parseProblemText(text, file.name.replace(/\.[^/.]+$/, ""));
+        importedFileDocuments = result;
+
+        if (fileUploadPreview && fileUploadSummary && fileUploadContentPreview) {
+          fileUploadPreview.style.display = "block";
+          fileUploadSummary.textContent = `✓ Ingested "${file.name}" · Extracted ${result.documents.length} document revisions`;
+          fileUploadContentPreview.textContent = JSON.stringify(result.documents, null, 2);
+        }
+
+        if (!importProblemTitleInput.value || importProblemTitleInput.value.startsWith("custom_")) {
+          importProblemTitleInput.value = result.title;
+        }
+        if (!importProblemIdInput.value || importProblemIdInput.value.startsWith("custom_")) {
+          importProblemIdInput.value = result.title.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 24);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    if (problemDropZone) {
+      problemDropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        problemDropZone.classList.add("dragover");
+      });
+      problemDropZone.addEventListener("dragleave", () => {
+        problemDropZone.classList.remove("dragover");
+      });
+      problemDropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        problemDropZone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFileSelected(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    if (problemFileInput) {
+      problemFileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFileSelected(e.target.files[0]);
+        }
+      });
+    }
+
+    // --- SAMPLE PASTE LOADER ---
+    if (loadSamplePasteBtn && pasteSpecTextarea) {
+      loadSamplePasteBtn.addEventListener("click", () => {
+        pasteSpecTextarea.value = [
+          "Document: ARCH-V1",
+          "Version: 1.0.0",
+          "Date: 2025-01-15",
+          "Title: Distributed In-Memory Cache Standard",
+          "All edge nodes must retain transaction state on local NVMe solid-state storage.",
+          "Replication cluster size is strictly limited to 16 nodes due to Raft constraints.",
+          "",
+          "---",
+          "",
+          "Document: ARCH-V2",
+          "Version: 2.0.0",
+          "Date: 2025-07-20",
+          "Title: Elastic Cloud Object Store Migration",
+          "All edge nodes run persistence on network-attached object storage volumes.",
+          "Cluster size scales dynamically to 64 nodes through a leaderless Paxos ring.",
+          "",
+          "---",
+          "",
+          "Document: PERF-AUDIT",
+          "Version: 1.1.0",
+          "Date: 2025-08-01",
+          "Title: Critical Latency SLA Guarantee",
+          "The system achieves sub-5ms write latency as a direct consequence of local NVMe solid-state storage."
+        ].join("\n");
+
+        importProblemTitleInput.value = "Edge Cache Storage & Node Invalidation";
+        importProblemIdInput.value = "edge_cache_invalidation";
+        importProblemStatus.textContent = "✓ Sample specification loaded into paste editor.";
+        importProblemStatus.style.color = "var(--emerald)";
+      });
+    }
+
+    // --- INTERACTIVE DOCUMENT BUILDER ---
+    function createBuilderDocCard(doc = {}) {
+      const card = document.createElement("div");
+      card.className = "builder-doc-item";
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="font-weight: 600; font-size: 13px; color: var(--cyan); display: flex; align-items: center; gap: 6px;">
+            <span>📄</span> <span class="doc-item-num">Document Revision</span>
+          </div>
+          <button class="btn btn-secondary remove-builder-card-btn" type="button" style="padding: 2px 8px; font-size: 11px; color: var(--rose); border-color: rgba(239, 68, 68, 0.3);">Remove</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 120px 1fr 100px 130px; gap: 8px; margin-bottom: 8px;">
+          <div>
+            <label style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 2px;">Doc ID</label>
+            <input type="text" class="card-doc-id" value="${escapeHtml(doc.doc_id || 'DOC-' + (builderDocCards.children.length + 1))}" style="width: 100%; font-size: 12px; padding: 5px 8px;">
+          </div>
+          <div>
+            <label style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 2px;">Title</label>
+            <input type="text" class="card-title" value="${escapeHtml(doc.title || 'Architecture Specification')}" style="width: 100%; font-size: 12px; padding: 5px 8px;">
+          </div>
+          <div>
+            <label style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 2px;">Version</label>
+            <input type="text" class="card-version" value="${escapeHtml(doc.version || '1.0.0')}" style="width: 100%; font-size: 12px; padding: 5px 8px;">
+          </div>
+          <div>
+            <label style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 2px;">Date</label>
+            <input type="date" class="card-date" value="${escapeHtml(doc.timestamp || '2025-01-15')}" style="width: 100%; font-size: 12px; padding: 4px 6px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 2px;">Propositions / Specifications (Separate statements with periods)</label>
+          <textarea class="card-content" style="width: 100%; height: 60px; font-family: var(--font-mono); font-size: 11px; padding: 6px 8px; resize: vertical;">${escapeHtml(doc.content || '')}</textarea>
+        </div>
+      `;
+
+      card.querySelector(".remove-builder-card-btn").addEventListener("click", () => {
+        if (builderDocCards.children.length > 1) {
+          card.remove();
+        } else {
+          alert("A problem must have at least one document revision.");
+        }
+      });
+
+      return card;
+    }
+
+    function initBuilderCards() {
+      if (!builderDocCards) return;
+      builderDocCards.innerHTML = "";
+      const defaultDocs = [
+        {
+          doc_id: "SPEC-V1",
+          title: "Baseline Operational Architecture",
+          version: "1.0.0",
+          timestamp: "2025-01-15",
+          content: "All cluster transaction state must execute directly on local NVMe solid-state storage.\nThe cluster size is strictly limited to 16 nodes due to Raft consensus constraints."
+        },
+        {
+          doc_id: "SPEC-V2",
+          title: "Cloud Scale Migration Architecture",
+          version: "2.0.0",
+          timestamp: "2025-07-20",
+          content: "All cluster state persistence operations run on network-attached object storage volumes.\nThe cluster size scales to 64 nodes through a leaderless Paxos ring."
+        },
+        {
+          doc_id: "AUDIT-1",
+          title: "Annual Performance SLA Certification",
+          version: "1.1.0",
+          timestamp: "2025-08-01",
+          content: "Sub-5ms write latency is guaranteed as a direct consequence of local NVMe solid-state storage."
+        }
+      ];
+      defaultDocs.forEach(d => builderDocCards.appendChild(createBuilderDocCard(d)));
+    }
+
+    if (addBuilderDocCardBtn) {
+      addBuilderDocCardBtn.addEventListener("click", () => {
+        const nextIdx = builderDocCards.children.length + 1;
+        builderDocCards.appendChild(createBuilderDocCard({
+          doc_id: `SPEC-V${nextIdx}`,
+          title: `Revision Specification ${nextIdx}`,
+          version: `${nextIdx}.0.0`,
+          timestamp: new Date().toISOString().slice(0, 10),
+          content: ""
+        }));
+      });
+    }
+
+    // --- TEMPLATES SELECTION ---
+    document.querySelectorAll(".template-card").forEach(card => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".template-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        const tplId = card.getAttribute("data-template-id");
+        selectedTemplateId = tplId;
+        const tpl = BUILTIN_SCENARIOS[tplId];
+        if (tpl) {
+          importProblemTitleInput.value = tpl.title;
+          importProblemIdInput.value = tpl.id;
+          importProblemStatus.textContent = `✓ Selected enterprise template: "${tpl.title}". Ready to ingest.`;
+          importProblemStatus.style.color = "var(--cyan)";
+        }
+      });
+    });
+
+    // --- EXECUTE IMPORT AND SOLVE PROBLEM ---
+    if (executeImportAndSolveBtn) {
+      executeImportAndSolveBtn.addEventListener("click", () => {
+        let finalDocs = [];
+        let defaultTitle = "Custom Technical Problem";
+
+        if (activeImportTab === "uploadTab") {
+          if (!importedFileDocuments || !importedFileDocuments.documents || importedFileDocuments.documents.length === 0) {
+            importProblemStatus.textContent = "Please upload or drop a valid specification file (.json, .txt, .md).";
+            importProblemStatus.style.color = "var(--rose)";
+            return;
+          }
+          finalDocs = importedFileDocuments.documents;
+          defaultTitle = importedFileDocuments.title || "Uploaded Problem Specification";
+        } else if (activeImportTab === "pasteTab") {
+          const raw = pasteSpecTextarea.value.trim();
+          if (!raw) {
+            importProblemStatus.textContent = "Please paste specification text or click 'Load Sample Markdown'.";
+            importProblemStatus.style.color = "var(--rose)";
+            return;
+          }
+          const parsed = parseProblemText(raw, "Pasted Technical Scenario");
+          finalDocs = parsed.documents;
+          defaultTitle = parsed.title || "Pasted Specification Scenario";
+        } else if (activeImportTab === "builderTab") {
+          const cardItems = builderDocCards.querySelectorAll(".builder-doc-item");
+          cardItems.forEach(card => {
+            const docId = card.querySelector(".card-doc-id").value.trim();
+            const title = card.querySelector(".card-title").value.trim();
+            const version = card.querySelector(".card-version").value.trim();
+            const timestamp = card.querySelector(".card-date").value.trim();
+            const content = card.querySelector(".card-content").value.trim();
+            if (content) {
+              finalDocs.push({ doc_id: docId || "DOC", title: title || "Specification", version: version || "1.0.0", timestamp: timestamp || "2025-01-01", content });
+            }
+          });
+          if (finalDocs.length === 0) {
+            importProblemStatus.textContent = "Please provide proposition text in at least one document card.";
+            importProblemStatus.style.color = "var(--rose)";
+            return;
+          }
+          defaultTitle = "Interactive Assembled Problem";
+        } else if (activeImportTab === "templatesTab") {
+          if (!selectedTemplateId || !BUILTIN_SCENARIOS[selectedTemplateId]) {
+            importProblemStatus.textContent = "Please click to select an enterprise template card above.";
+            importProblemStatus.style.color = "var(--rose)";
+            return;
+          }
+          const tpl = BUILTIN_SCENARIOS[selectedTemplateId];
+          finalDocs = JSON.parse(JSON.stringify(tpl.documents));
+          defaultTitle = tpl.title;
+        }
+
+        const title = (importProblemTitleInput.value.trim()) || defaultTitle;
+        const problemId = (importProblemIdInput.value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_")) || `prob_${Date.now().toString().slice(-6)}`;
+
+        // Save into userProblems
+        userProblems[problemId] = {
+          id: problemId,
+          title: title,
+          description: `Custom ingested problem with ${finalDocs.length} specification revisions.`,
+          documents: finalDocs,
+          importedAt: new Date().toISOString()
+        };
+
+        try {
+          localStorage.setItem("claimgraph_user_problems", JSON.stringify(userProblems));
+        } catch (e) {
+          console.warn("Storage quota exceeded or unavailable:", e);
+        }
+
+        // Update dropdown and select this problem
+        updateScenarioSelect(problemId);
+
+        // Close modal
+        closeImportModal();
+
+        // Solve problem immediately via audit
+        runAudit();
+
+        // Switch to interactive graph view
+        switchMainTab("graphTab");
+
+        // Status update
+        statusMessage.textContent = `✓ Problem "${title}" successfully imported and solved!`;
+        statusMessage.style.color = "var(--emerald)";
+      });
+    }
+
     // --- HELPER HTML ESCAPE ---
     function escapeHtml(str) {
       if (!str) return "";
@@ -2460,6 +3434,7 @@
 
     // --- INITIALIZE ON LOAD ---
     window.addEventListener("DOMContentLoaded", () => {
+      updateScenarioSelect();
       checkHealth();
       runAudit();
     });

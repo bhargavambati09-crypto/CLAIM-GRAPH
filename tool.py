@@ -254,14 +254,26 @@ class ClaimGraph:
 
     def auto_link_dependencies(self):
         """Automatically links conclusions to premise claims that their statements mention."""
+        stopwords = {
+            "the", "is", "a", "an", "to", "of", "and", "in", "on", "all",
+            "for", "due", "are", "be", "this", "that", "with", "from", "must", "run",
+            "system", "direct", "result", "consequence", "guaranteed", "as"
+        }
+        domain_kws = [
+            "nvme", "storage", "san", "hardware", "nodes", "redis", "session",
+            "synchronous", "datacenter", "gps", "satellite", "two-phase", "2pc",
+            "fp16", "precision", "lock", "quorum", "paxos", "raft", "eventual", "asynchronous"
+        ]
         for cid, claim in self.claims.items():
-            if claim.claim_type == ClaimType.CONCLUSION or "consequence of" in claim.statement.lower() or "direct result" in claim.statement.lower():
-                stmt_low = claim.statement.lower()
+            stmt_low = claim.statement.lower()
+            if claim.claim_type == ClaimType.CONCLUSION or any(kw in stmt_low for kw in ["consequence of", "direct result", "therefore", "guaranteed as"]):
+                concl_words = {w for w in re.findall(r"\b\w{3,}\b", stmt_low)} - stopwords
                 for pid, premise in self.claims.items():
                     if pid != cid and premise.claim_type != ClaimType.CONCLUSION:
-                        if ("nvme" in stmt_low and "nvme" in premise.statement.lower()) or \
-                           ("storage" in stmt_low and "storage" in premise.statement.lower()) or \
-                           ("nodes" in stmt_low and "nodes" in premise.statement.lower()):
+                        p_low = premise.statement.lower()
+                        prem_words = {w for w in re.findall(r"\b\w{3,}\b", p_low)} - stopwords
+                        overlap = concl_words.intersection(prem_words)
+                        if len(overlap) >= 2 or any(kw in stmt_low and kw in p_low for kw in domain_kws):
                             self.link_conclusion(cid, [pid])
 
     def check_contradiction_pair_deterministic(self, claim_a: AtomicClaim, claim_b: AtomicClaim) -> Optional[ContradictionEdge]:
@@ -278,11 +290,11 @@ class ClaimGraph:
             if ("node" in st_a or "cluster" in st_a) and ("node" in st_b or "cluster" in st_b):
                 conflict_reasons.append(f"Capacity contradiction: {sorted(num_a)[0]} nodes vs {sorted(num_b)[0]} nodes")
 
-        # 2. Storage conflict (local NVMe vs network-attached object storage)
-        if ("nvme" in st_a or "local" in st_a) and ("object storage" in st_b or "network-attached" in st_b):
-            conflict_reasons.append("Storage topology shift: Local NVMe solid-state storage conflicts with network-attached object storage")
-        elif ("object storage" in st_a or "network-attached" in st_a) and ("nvme" in st_b or "local" in st_b):
-            conflict_reasons.append("Storage topology shift: Network-attached object storage conflicts with local NVMe solid-state storage")
+        # 2. Storage conflict (local NVMe vs network-attached object storage / SAN vs cloud bucket)
+        if ("nvme" in st_a or "local" in st_a or "san" in st_a) and ("object storage" in st_b or "network-attached" in st_b or "cloud" in st_b):
+            conflict_reasons.append("Storage topology shift: Local NVMe/SAN storage conflicts with network-attached cloud object storage")
+        elif ("object storage" in st_a or "network-attached" in st_a or "cloud" in st_a) and ("nvme" in st_b or "local" in st_b or "san" in st_b):
+            conflict_reasons.append("Storage topology shift: Network-attached cloud object storage conflicts with local NVMe/SAN storage")
 
         # 3. Consensus conflict (Raft vs Paxos)
         if "raft" in st_a and "paxos" in st_b:
@@ -293,6 +305,32 @@ class ClaimGraph:
         # 4. Auth conflict (JWT session vs Ed25519 stateless)
         if "session" in st_a and "stateless" in st_b:
             conflict_reasons.append("Authentication architecture divergence: Stateful session conflicts with stateless token mechanism")
+        elif "stateless" in st_a and "session" in st_b:
+            conflict_reasons.append("Authentication architecture divergence: Stateless token mechanism conflicts with centralized stateful session stores")
+
+        # 5. Database replication conflict (Synchronous vs Asynchronous / Eventual)
+        if "synchronous" in st_a and ("asynchronous" in st_b or "eventual" in st_b):
+            conflict_reasons.append("Replication paradigm conflict: Synchronous cross-datacenter replication conflicts with asynchronous eventual quorum")
+        elif ("asynchronous" in st_a or "eventual" in st_a) and "synchronous" in st_b:
+            conflict_reasons.append("Replication paradigm conflict: Asynchronous eventual quorum conflicts with synchronous cross-datacenter replication")
+
+        # 6. Avionics / Navigation conflict (GPS vs Optical vision / Lidar)
+        if "gps" in st_a and ("optical" in st_b or "vision" in st_b or "lidar" in st_b):
+            conflict_reasons.append("Navigation telemetry divergence: Differential GPS navigation conflicts with vision/lidar odometry")
+        elif ("optical" in st_a or "vision" in st_a or "lidar" in st_a) and "gps" in st_b:
+            conflict_reasons.append("Navigation telemetry divergence: Vision/lidar odometry conflicts with differential GPS navigation")
+
+        # 7. Model precision conflict (FP16 vs INT8 quantized)
+        if ("fp16" in st_a or "16-bit" in st_a) and ("int8" in st_b or "8-bit" in st_b or "quantized" in st_b):
+            conflict_reasons.append("Mathematical precision divergence: 16-bit FP16 precision conflicts with 8-bit quantized execution")
+        elif ("int8" in st_a or "8-bit" in st_a or "quantized" in st_a) and ("fp16" in st_b or "16-bit" in st_b):
+            conflict_reasons.append("Mathematical precision divergence: 8-bit quantized execution conflicts with 16-bit FP16 precision")
+
+        # 8. Ledger persistence conflict (Two-phase commit vs Event-sourced CQRS)
+        if ("two-phase" in st_a or "2pc" in st_a) and ("event-sourced" in st_b or "cqrs" in st_b):
+            conflict_reasons.append("Ledger persistence divergence: Strict two-phase commit synchronous locking conflicts with asynchronous event-sourced CQRS")
+        elif ("event-sourced" in st_a or "cqrs" in st_a) and ("two-phase" in st_b or "2pc" in st_b):
+            conflict_reasons.append("Ledger persistence divergence: Asynchronous event-sourced CQRS conflicts with strict two-phase commit locking")
 
         if conflict_reasons:
             return ContradictionEdge(

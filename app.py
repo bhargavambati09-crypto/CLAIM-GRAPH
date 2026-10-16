@@ -130,6 +130,150 @@ SCENARIOS = {
             },
         ],
     },
+    "healthcare_hipaa": {
+        "id": "healthcare_hipaa",
+        "title": "Healthcare HIPAA Cloud Migration",
+        "description": "Transition from local dedicated SAN hardware to public multi-tenant cloud object buckets, invalidating physical BAA isolation guarantee.",
+        "documents": [
+            {
+                "doc_id": "HIPAA-V1",
+                "title": "Patient Health Records Architecture",
+                "version": "1.0.0",
+                "timestamp": "2024-03-01",
+                "content": (
+                    "All patient electronic health records (ePHI) must be stored exclusively on local dedicated hardware SAN storage with physically segregated access controls.\n\n"
+                    "Access auditing requires dedicated hardware appliance logging."
+                ),
+            },
+            {
+                "doc_id": "HIPAA-V2",
+                "title": "Public Cloud Modernization Migration",
+                "version": "2.0.0",
+                "timestamp": "2024-11-15",
+                "content": (
+                    "Patient health data storage scales into multi-tenant public cloud object buckets with automated TLS encryption at rest.\n\n"
+                    "Access logging transitions to centralized cloud trail events."
+                ),
+            },
+            {
+                "doc_id": "AUDIT-HIPAA-Q4",
+                "title": "Annual Healthcare Regulatory Audit",
+                "version": "1.2.0",
+                "timestamp": "2024-12-01",
+                "content": (
+                    "The system satisfies strict physical BAA isolation guarantees as a direct consequence of local dedicated hardware SAN storage."
+                ),
+            },
+        ],
+    },
+    "drone_avionics": {
+        "id": "drone_avionics",
+        "title": "Autonomous Drone Navigation & Fail-Safe",
+        "description": "Shift from dual differential GPS lock to optical vision odometry, invalidating sub-10cm return-to-home landing precision.",
+        "documents": [
+            {
+                "doc_id": "DRONE-V1",
+                "title": "Avionics Core Specification",
+                "version": "1.0.0",
+                "timestamp": "2025-01-10",
+                "content": (
+                    "All autonomous navigation decisions must execute with dual differential GPS lock.\n\n"
+                    "Telemetry beacon polling occurs at 50Hz via satellite transponders."
+                ),
+            },
+            {
+                "doc_id": "DRONE-V2",
+                "title": "GPS-Denied Navigation Upgrade",
+                "version": "2.0.0",
+                "timestamp": "2025-06-20",
+                "content": (
+                    "Autonomous navigation switches to optical vision flow and lidar odometry in GPS-denied environments without satellite dependency.\n\n"
+                    "Visual odometry polling runs on edge neural accelerators at 120Hz."
+                ),
+            },
+            {
+                "doc_id": "SAFETY-AUDIT",
+                "title": "Autonomous Flight Safety Assessment",
+                "version": "1.1.0",
+                "timestamp": "2025-07-05",
+                "content": (
+                    "The aircraft guarantees zero-drift return-to-home accuracy under 10cm as a direct consequence of dual differential GPS lock."
+                ),
+            },
+        ],
+    },
+    "fintech_ledger": {
+        "id": "fintech_ledger",
+        "title": "Fintech Real-Time Ledger Persistence",
+        "description": "Migration from strict two-phase commit synchronous locks to asynchronous CQRS event-sourcing, invalidating instantaneous zero-skew ledger balance reconciliation.",
+        "documents": [
+            {
+                "doc_id": "LEDGER-V1",
+                "title": "Financial Transaction Persistence Specification",
+                "version": "1.0.0",
+                "timestamp": "2025-02-01",
+                "content": (
+                    "All transaction persistence operates via strict two-phase commit synchronous locks across relational database nodes.\n\n"
+                    "Balance ledger mutations require distributed row locks on every transfer."
+                ),
+            },
+            {
+                "doc_id": "LEDGER-V2",
+                "title": "High-Throughput CQRS Ledger Engine",
+                "version": "2.0.0",
+                "timestamp": "2025-09-10",
+                "content": (
+                    "Transaction processing transitions to an asynchronous event-sourced CQRS log with eventual ledger consistency.\n\n"
+                    "Ledger mutations stream non-blocking transaction events to distributed partitions."
+                ),
+            },
+            {
+                "doc_id": "FIN-COMPLIANCE",
+                "title": "Banking Core Reconciliation Compliance",
+                "version": "1.1.0",
+                "timestamp": "2025-10-01",
+                "content": (
+                    "The platform guarantees real-time zero-skew ledger reconciliation as a direct consequence of strict two-phase commit synchronous locks."
+                ),
+            },
+        ],
+    },
+    "ai_quantization": {
+        "id": "ai_quantization",
+        "title": "AI Inference Quantization & SLA Protocol",
+        "description": "Transition from dedicated FP16 tensor clusters to INT8 edge NPU quantization, invalidating 99.9% token mathematical precision fidelity guarantee.",
+        "documents": [
+            {
+                "doc_id": "INFER-V1",
+                "title": "High-Precision Inference Architecture",
+                "version": "1.0.0",
+                "timestamp": "2025-03-05",
+                "content": (
+                    "All tensor model inference must execute strictly in 16-bit floating point precision (FP16) on dedicated GPU clusters.\n\n"
+                    "Weights remain unquantized in high-bandwidth GPU memory."
+                ),
+            },
+            {
+                "doc_id": "INFER-V2",
+                "title": "Edge NPU Quantized Architecture",
+                "version": "2.0.0",
+                "timestamp": "2025-08-15",
+                "content": (
+                    "Model inference transitions to 8-bit integer quantized (INT8) weights running across distributed edge NPU chips.\n\n"
+                    "Quantization utilizes post-training symmetric integer scaling."
+                ),
+            },
+            {
+                "doc_id": "SLA-REPORT",
+                "title": "Model Quality & Client SLA Review",
+                "version": "1.1.0",
+                "timestamp": "2025-09-02",
+                "content": (
+                    "The platform guarantees 99.9% token mathematical precision fidelity as a direct consequence of 16-bit floating point precision (FP16)."
+                ),
+            },
+        ],
+    },
 }
 
 
