@@ -1,0 +1,1726 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070a0f">
+  <title>CLAIM GRAPH · Evidence & Contradiction Intelligence</title>
+  <meta name="description" content="CLAIM GRAPH extracts atomic propositions from unstructured technical documentation, tracks temporal contradictions across revisions, and flags orphaned conclusions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #070a10;
+      --bg-surface: rgba(14, 20, 31, 0.75);
+      --bg-surface-elevated: rgba(20, 28, 44, 0.85);
+      --bg-card: rgba(16, 24, 38, 0.6);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(16, 185, 129, 0.4);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.25);
+      --violet: #8b5cf6;
+      --violet-glow: rgba(139, 92, 246, 0.25);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: radial-gradient(circle at 15% 10%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.09) 0%, transparent 45%),
+                  radial-gradient(circle at 50% 90%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+                  var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    /* Header & Navigation */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px var(--emerald-glow);
+    }
+
+    .logo-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: #070a10;
+      stroke-width: 2.3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(120deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--cyan);
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .badge-url {
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .badge-url:hover {
+      text-decoration: underline;
+      color: #38bdf8;
+    }
+
+    /* Hero Section */
+    .hero {
+      margin: 36px 0 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .hero-text h1 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4.5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .hero-text h1 span {
+      background: linear-gradient(135deg, var(--emerald) 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-text p {
+      max-width: 680px;
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Control Bar */
+    .controls-panel {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+    }
+
+    .controls-left, .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .select-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .select-group label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    select, input, textarea {
+      background: rgba(10, 15, 26, 0.9);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan-glow);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #05140f;
+      font-weight: 700;
+      box-shadow: 0 4px 18px var(--emerald-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 0, 0, 0.3);
+      border-top-color: #05140f;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+      transform: translateY(-2px);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .stat-card.total::before { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+    .stat-card.active::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .stat-card.conflicts::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .stat-card.orphaned::before { background: linear-gradient(90deg, #ec4899, #8b5cf6); }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn.active {
+      color: var(--emerald);
+      border-bottom-color: var(--emerald);
+      background: rgba(16, 185, 129, 0.06);
+    }
+
+    .tab-badge {
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.08);
+      color: inherit;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card Panels */
+    .panel {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .panel-header h2 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-body {
+      padding: 20px 24px;
+    }
+
+    /* Contradiction Cards */
+    .conflict-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      margin-bottom: 16px;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .conflict-card:hover {
+      border-color: rgba(244, 63, 94, 0.4);
+      box-shadow: 0 4px 24px rgba(244, 63, 94, 0.1);
+    }
+
+    .conflict-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .conflict-tag {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .conflict-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      background: rgba(8, 12, 20, 0.85);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .comparison-col {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .col-header {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .comparison-stmt {
+      font-size: 14px;
+      color: var(--text-main);
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .conflict-explanation {
+      font-size: 13px;
+      color: var(--amber);
+      background: rgba(245, 158, 11, 0.08);
+      border-left: 3px solid var(--amber);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Orphaned Conclusions Cards */
+    .orphan-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(236, 72, 153, 0.25);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .orphan-card:hover {
+      border-color: rgba(236, 72, 153, 0.45);
+      box-shadow: 0 4px 24px rgba(236, 72, 153, 0.1);
+    }
+
+    .orphan-conclusion-box {
+      background: rgba(8, 12, 20, 0.8);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+    }
+
+    .broken-evidence-box {
+      background: rgba(244, 63, 94, 0.07);
+      border-left: 3px solid var(--rose);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: #fda4af;
+      font-size: 13px;
+    }
+
+    /* Claims Table / List */
+    .claims-filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .claim-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      transition: all 0.2s;
+    }
+
+    .claim-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateX(2px);
+    }
+
+    .claim-content {
+      flex: 1;
+    }
+
+    .claim-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .pill.ACTIVE { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .pill.SUPERSEDED { background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .pill.CONTRADICTED { background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.35); }
+    .pill.ORPHANED { background: rgba(236, 72, 153, 0.15); color: #fbcfe8; border: 1px solid rgba(236, 72, 153, 0.35); }
+    .pill.topic { background: rgba(6, 182, 212, 0.12); color: #7dd3fc; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+    .claim-statement {
+      font-size: 14px;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .claim-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    /* Graph Canvas View */
+    .graph-container {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      background: radial-gradient(circle at center, rgba(16, 24, 38, 0.8) 0%, rgba(7, 10, 16, 0.95) 100%);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+    #graphCanvas:active {
+      cursor: grabbing;
+    }
+
+    .graph-legend {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(10, 15, 26, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .graph-controls {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .graph-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .graph-btn:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: var(--cyan);
+    }
+
+    /* Modal / Inspector Drawer */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: min(420px, 100vw);
+      height: 100vh;
+      background: rgba(14, 20, 32, 0.96);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border);
+      padding: 32px 24px;
+      z-index: 100;
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+      box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Custom Ingestion Panel */
+    .doc-editor-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .doc-editor-row {
+      display: grid;
+      grid-template-columns: 120px 1fr 100px 140px;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* Conflict Sandbox */
+    .sandbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* Empty States */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-dim);
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .conflict-comparison, .sandbox-grid { grid-template-columns: 1fr; }
+      .doc-editor-row { grid-template-columns: 1fr 1fr; }
+      .hero { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .app-container { padding: 18px 14px 60px; }
+      .controls-panel { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24">
+            <circle cx="6" cy="6" r="3"></circle>
+            <circle cx="18" cy="6" r="3"></circle>
+            <circle cx="12" cy="18" r="3"></circle>
+            <line x1="8.5" y1="7.5" x2="10" y2="15"></line>
+            <line x1="15.5" y1="7.5" x2="14" y2="15"></line>
+            <line x1="9" y1="6" x2="15" y2="6"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">CLAIM GRAPH</div>
+          <div class="brand-subtitle">Evidence & Contradiction Intelligence</div>
+        </div>
+      </div>
+      
+      <div class="header-badges">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>Engine: <strong id="engineStatusText">Dual AI Ready</strong></span>
+        </div>
+        <div class="badge">
+          <span>Local URL:</span>
+          <a class="badge-url" href="http://localhost:8000" target="_blank" id="localUrlLink">localhost:8000</a>
+        </div>
+        <div class="badge" id="publicUrlBadge">
+          <span>Public URL:</span>
+          <a class="badge-url" href="https://dry-ladybug-63.loca.lt" target="_blank" id="publicUrlLink">dry-ladybug-63.loca.lt</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Title -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Autonomous Evidence Graph &amp; <span>Contradiction Detection</span></h1>
+        <p>Deconstruct unstructured architectural specifications and research documents into testable atomic claims. Dynamically trace cross-document revisions, resolve temporal supersession, and pinpoint invalidated conclusions whose supporting evidence has fallen.</p>
+      </div>
+    </section>
+
+    <!-- Controls Panel -->
+    <section class="controls-panel">
+      <div class="controls-left">
+        <div class="select-group">
+          <label for="scenarioSelect">Technical Scenario</label>
+          <select id="scenarioSelect">
+            <option value="cloud_distributed">1. Cloud Distributed Engine (Raft → Paxos, NVMe Invalidation)</option>
+            <option value="auth_microservices">2. Microservices Auth (Redis Session → Ed25519 Stateless)</option>
+            <option value="distributed_database">3. Database Consensus (Synchronous 3-DC → Async Quorum)</option>
+            <option value="custom">Custom Ingestion Playground...</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="modeSelect">Inference Engine</label>
+          <select id="modeSelect">
+            <option value="auto">Auto (Ollama + Neural Fallback)</option>
+            <option value="fast">Fast Semantic Engine (Zero Latency)</option>
+            <option value="ollama">Ollama (Gemma 3:1b Local AI)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="controls-right">
+        <button id="runAuditBtn" class="btn btn-primary" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span id="runBtnLabel">Run Intelligence Audit</span>
+        </button>
+
+        <button id="exportReportBtn" class="btn btn-secondary" type="button" title="Export audit report as JSON">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Export
+        </button>
+      </div>
+    </section>
+
+    <!-- Status Notice -->
+    <div id="statusNotice" style="margin-bottom: 20px; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between;">
+      <span id="statusMessage">System idle. Ready to execute claim extraction graph.</span>
+      <span id="executionTime" style="font-family: var(--font-mono); color: var(--cyan);"></span>
+    </div>
+
+    <!-- Metrics Cards -->
+    <section class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-label">Total Claims Extracted</div>
+        <div class="stat-value" id="statTotalClaims">0</div>
+        <div class="stat-sub">Atomic propositions mapped</div>
+      </div>
+      <div class="stat-card active">
+        <div class="stat-label">Active Valid Claims</div>
+        <div class="stat-value" id="statActiveClaims">0</div>
+        <div class="stat-sub" style="color: var(--emerald);">Unrefuted current truth</div>
+      </div>
+      <div class="stat-card conflicts">
+        <div class="stat-label">Contradictions Detected</div>
+        <div class="stat-value" id="statConflicts">0</div>
+        <div class="stat-sub" style="color: var(--amber);">Temporal supersessions</div>
+      </div>
+      <div class="stat-card orphaned">
+        <div class="stat-label">Orphaned Conclusions</div>
+        <div class="stat-value" id="statOrphans">0</div>
+        <div class="stat-sub" style="color: var(--rose);">Invalidated dependency trees</div>
+      </div>
+    </section>
+
+    <!-- Tabbed Navigation -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="graphTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><circle cx="12" cy="18" r="3"></circle><line x1="8.5" y1="7.5" x2="10" y2="15"></line><line x1="15.5" y1="7.5" x2="14" y2="15"></line></svg>
+        Interactive Knowledge Graph
+      </button>
+      <button class="tab-btn" data-tab="conflictsTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Contradictions Matrix
+        <span class="tab-badge" id="conflictsBadge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="orphansTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        Orphaned Conclusions
+        <span class="tab-badge" id="orphansBadge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="claimsTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        Claims Directory
+        <span class="tab-badge" id="claimsBadge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="docsTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+        Source Documents
+      </button>
+      <button class="tab-btn" data-tab="sandboxTab">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        Pair Conflict Sandbox
+      </button>
+    </nav>
+
+    <!-- Tab 1: Knowledge Graph Canvas -->
+    <div id="graphTab" class="tab-pane active">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Interactive Directed Property Graph</h2>
+          <span style="font-size: 13px; color: var(--text-muted);">Drag nodes, scroll to zoom, click node for deep inspection</span>
+        </div>
+        <div class="graph-container">
+          <div class="graph-legend">
+            <div class="legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> Document Node</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #10b981;"></span> Active Claim</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Superseded Claim</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Contradicted Claim</div>
+            <div class="legend-item"><span class="legend-dot" style="background: #ec4899;"></span> Orphaned Conclusion</div>
+          </div>
+          <div class="graph-controls">
+            <button class="graph-btn" id="zoomInBtn" title="Zoom In">+</button>
+            <button class="graph-btn" id="zoomOutBtn" title="Zoom Out">−</button>
+            <button class="graph-btn" id="resetGraphBtn" title="Reset View">⟲</button>
+          </div>
+          <canvas id="graphCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Contradictions Matrix -->
+    <div id="conflictsTab" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Temporal Revision Contradictions</h2>
+          <span style="font-size: 13px; color: var(--text-muted);" id="conflictsSummaryText">Across multi-version technical specifications</span>
+        </div>
+        <div class="panel-body" id="conflictsList">
+          <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <p>Run an audit to discover semantic contradictions across documents.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Orphaned Conclusions -->
+    <div id="orphansTab" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Orphaned Conclusions &amp; Broken Evidence Chains</h2>
+          <span style="font-size: 13px; color: var(--text-muted);">Conclusions whose foundational premises were refuted or superseded</span>
+        </div>
+        <div class="panel-body" id="orphansList">
+          <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <p>No orphaned conclusions detected yet. Run audit to analyze dependencies.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Claims Directory -->
+    <div id="claimsTab" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Extracted Atomic Claims Repository</h2>
+          <input type="text" id="claimsSearchInput" placeholder="Filter claims by topic or text..." style="width: 280px;">
+        </div>
+        <div class="panel-body">
+          <div class="claims-filter-bar">
+            <button class="filter-chip active" data-filter="ALL">All Claims</button>
+            <button class="filter-chip" data-filter="ACTIVE">Active</button>
+            <button class="filter-chip" data-filter="SUPERSEDED">Superseded</button>
+            <button class="filter-chip" data-filter="CONTRADICTED">Contradicted</button>
+            <button class="filter-chip" data-filter="ORPHANED">Orphaned</button>
+          </div>
+          <div id="claimsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Source Documents -->
+    <div id="docsTab" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Ingested Source Documents</h2>
+          <button class="btn btn-secondary" id="addNewDocBtn" style="padding: 7px 14px; font-size: 12px;">+ Add Custom Document</button>
+        </div>
+        <div class="panel-body" id="docsList"></div>
+      </div>
+    </div>
+
+    <!-- Tab 6: Pair Conflict Sandbox -->
+    <div id="sandboxTab" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Real-Time Statement Conflict Tester</h2>
+          <span style="font-size: 13px; color: var(--text-muted);">Interactively test any two propositions for mutual contradiction</span>
+        </div>
+        <div class="panel-body">
+          <div class="sandbox-grid">
+            <div class="select-group">
+              <label>Statement A (Earlier Revision)</label>
+              <textarea id="sandboxA" rows="4" placeholder="e.g. Cluster capacity is strictly locked to 16 nodes.">The cluster size is strictly limited to 16 nodes due to Raft consensus constraints.</textarea>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <input type="text" id="sandboxDateA" value="2025-01-15" placeholder="YYYY-MM-DD" style="width: 140px;">
+                <input type="text" id="sandboxTopicA" value="Cluster Size" placeholder="Topic" style="flex: 1;">
+              </div>
+            </div>
+            <div class="select-group">
+              <label>Statement B (Later Revision)</label>
+              <textarea id="sandboxB" rows="4" placeholder="e.g. Cluster capacity expands dynamically to 64 nodes.">The cluster size scales to 64 nodes through a leaderless Paxos ring.</textarea>
+              <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <input type="text" id="sandboxDateB" value="2025-08-20" placeholder="YYYY-MM-DD" style="width: 140px;">
+                <input type="text" id="sandboxTopicB" value="Cluster Size" placeholder="Topic" style="flex: 1;">
+              </div>
+            </div>
+          </div>
+          <button id="verifyPairBtn" class="btn btn-primary" type="button">Verify Contradiction Pair</button>
+          <div id="pairResult" style="margin-top: 18px;" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer for Node Inspection -->
+    <aside class="drawer" id="nodeDrawer">
+      <div class="drawer-header">
+        <h3 id="drawerTitle">Claim Details</h3>
+        <button class="close-btn" id="closeDrawerBtn">&times;</button>
+      </div>
+      <div id="drawerBody"></div>
+    </aside>
+
+    <!-- Footer -->
+    <footer>
+      <div>
+        <strong>CLAIM GRAPH</strong> · High-Integrity Evidence Intelligence Engine
+      </div>
+      <div>
+        <span>Powered by NetworkX &amp; Dual AI Model (Gemma 3:1b + Semantic Grammar)</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // State
+    let currentAuditData = null;
+    let customDocuments = [];
+    let activeFilter = "ALL";
+    let activeSearch = "";
+
+    // DOM Elements
+    const runAuditBtn = document.getElementById("runAuditBtn");
+    const runBtnLabel = document.getElementById("runBtnLabel");
+    const scenarioSelect = document.getElementById("scenarioSelect");
+    const modeSelect = document.getElementById("modeSelect");
+    const statusMessage = document.getElementById("statusMessage");
+    const executionTime = document.getElementById("executionTime");
+    const engineStatusText = document.getElementById("engineStatusText");
+    const exportReportBtn = document.getElementById("exportReportBtn");
+    const publicUrlLink = document.getElementById("publicUrlLink");
+
+    // Metrics elements
+    const statTotalClaims = document.getElementById("statTotalClaims");
+    const statActiveClaims = document.getElementById("statActiveClaims");
+    const statConflicts = document.getElementById("statConflicts");
+    const statOrphans = document.getElementById("statOrphans");
+
+    // Badges
+    const conflictsBadge = document.getElementById("conflictsBadge");
+    const orphansBadge = document.getElementById("orphansBadge");
+    const claimsBadge = document.getElementById("claimsBadge");
+
+    // Lists
+    const conflictsList = document.getElementById("conflictsList");
+    const orphansList = document.getElementById("orphansList");
+    const claimsList = document.getElementById("claimsList");
+    const docsList = document.getElementById("docsList");
+
+    // Canvas
+    const canvas = document.getElementById("graphCanvas");
+    const ctx = canvas.getContext("2d");
+    let nodes = [];
+    let edges = [];
+    let simulationRunning = false;
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let draggedNode = null;
+
+    // Check System Health & Tunnels
+    async function checkHealth() {
+      try {
+        const res = await fetch("/health");
+        const data = await res.json();
+        if (data.ollama_available) {
+          engineStatusText.textContent = `Ollama (${data.model}) Ready`;
+          engineStatusText.style.color = "var(--emerald)";
+        } else {
+          engineStatusText.textContent = `Fast Neural Engine (Ollama Standby)`;
+          engineStatusText.style.color = "var(--cyan)";
+        }
+      } catch (e) {
+        engineStatusText.textContent = "Offline / Reconnecting";
+      }
+
+      // Check current window location for public url
+      const currentHost = window.location.host;
+      if (currentHost && !currentHost.includes("localhost") && !currentHost.includes("127.0.0.1")) {
+        publicUrlLink.href = window.location.href;
+        publicUrlLink.textContent = currentHost;
+      } else {
+        publicUrlLink.textContent = "Generating...";
+        // Try to fetch public url from server if available
+      }
+    }
+
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        const tabId = btn.getAttribute("data-tab");
+        document.getElementById(tabId).classList.add("active");
+        if (tabId === "graphTab") {
+          resizeCanvas();
+        }
+      });
+    });
+
+    // Run Audit
+    async function runAudit() {
+      runAuditBtn.disabled = true;
+      runBtnLabel.textContent = "Extracting & Reconciling...";
+      runAuditBtn.insertAdjacentHTML("afterbegin", '<span class="spinner" id="activeSpinner"></span>');
+      statusMessage.textContent = "Parsing documents, extracting atomic claims, checking temporal conflicts...";
+      statusMessage.style.color = "var(--cyan)";
+
+      const scenario = scenarioSelect.value;
+      const mode = modeSelect.value;
+      const payload = { mode };
+
+      if (scenario !== "custom") {
+        payload.scenario_id = scenario;
+      } else if (customDocuments.length > 0) {
+        payload.documents = customDocuments;
+      }
+
+      try {
+        const res = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Audit failed");
+
+        currentAuditData = data;
+        renderResults(data);
+        statusMessage.textContent = `Audit completed successfully via ${data.engine_used}.`;
+        statusMessage.style.color = "var(--emerald)";
+        executionTime.textContent = `Execution time: ${data.execution_time_seconds}s`;
+      } catch (err) {
+        statusMessage.textContent = `Error: ${err.message}`;
+        statusMessage.style.color = "var(--rose)";
+      } finally {
+        runAuditBtn.disabled = false;
+        runBtnLabel.textContent = "Run Intelligence Audit";
+        const spinner = document.getElementById("activeSpinner");
+        if (spinner) spinner.remove();
+      }
+    }
+
+    runAuditBtn.addEventListener("click", runAudit);
+
+    // Render Audit Results
+    function renderResults(data) {
+      // 1. Stats
+      statTotalClaims.textContent = data.summary.total_claims;
+      statActiveClaims.textContent = data.summary.active_claims;
+      statConflicts.textContent = data.summary.contradicted_claims;
+      statOrphans.textContent = data.summary.orphaned_conclusions;
+
+      conflictsBadge.textContent = data.contradictions.length;
+      orphansBadge.textContent = data.orphaned_claims.length;
+      claimsBadge.textContent = data.claims.length;
+
+      // 2. Contradictions List
+      if (data.contradictions.length === 0) {
+        conflictsList.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><p>No direct contradictions detected across the documents.</p></div>`;
+      } else {
+        conflictsList.innerHTML = data.contradictions.map(c => `
+          <div class="conflict-card">
+            <div class="conflict-header">
+              <span class="conflict-tag">Temporal Contradiction</span>
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">${escapeHtml(c.source_doc_id)} ⟷ ${escapeHtml(c.target_doc_id)}</span>
+            </div>
+            <div class="conflict-comparison">
+              <div class="comparison-col">
+                <span class="col-header">Earlier Statement [Status: ${escapeHtml(c.source_status)}]</span>
+                <p class="comparison-stmt">"${escapeHtml(c.source_statement)}"</p>
+              </div>
+              <div class="comparison-col">
+                <span class="col-header">Later Superseding Statement [Status: ${escapeHtml(c.target_status)}]</span>
+                <p class="comparison-stmt">"${escapeHtml(c.target_statement)}"</p>
+              </div>
+            </div>
+            <div class="conflict-explanation">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+              <span><strong>Conflict Reason:</strong> ${escapeHtml(c.explanation)}</span>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // 3. Orphaned Conclusions
+      if (data.orphaned_claims.length === 0) {
+        orphansList.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><p>All conclusions are supported by active valid premises.</p></div>`;
+      } else {
+        orphansList.innerHTML = data.orphaned_claims.map(o => `
+          <div class="orphan-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="pill ORPHANED">Orphaned Conclusion · ${escapeHtml(o.document)}</span>
+              <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);">ID: ${escapeHtml(o.claim_id)}</span>
+            </div>
+            <div class="orphan-conclusion-box">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #f472b6;">Asserted Conclusion:</span>
+              <p style="font-size: 15px; font-weight: 600; margin-top: 4px;">"${escapeHtml(o.conclusion)}"</p>
+            </div>
+            <div class="broken-evidence-box">
+              <strong>Broken/Refuted Foundations:</strong>
+              <ul style="margin-top: 6px; padding-left: 18px;">
+                ${o.invalidated_premises.map(p => `<li>"${escapeHtml(p)}" (Refuted / Superseded by later spec)</li>`).join("")}
+              </ul>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // 4. Claims Directory
+      renderClaims();
+
+      // 5. Source Documents
+      renderDocuments(data.documents);
+
+      // 6. Interactive Graph
+      initGraph(data.graph);
+    }
+
+    // Filter Chips
+    document.querySelectorAll(".filter-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        activeFilter = chip.getAttribute("data-filter");
+        renderClaims();
+      });
+    });
+
+    document.getElementById("claimsSearchInput").addEventListener("input", (e) => {
+      activeSearch = e.target.value.toLowerCase();
+      renderClaims();
+    });
+
+    function renderClaims() {
+      if (!currentAuditData) return;
+      let claims = currentAuditData.claims;
+
+      if (activeFilter !== "ALL") {
+        claims = claims.filter(c => c.status === activeFilter);
+      }
+      if (activeSearch) {
+        claims = claims.filter(c => c.statement.toLowerCase().includes(activeSearch) || c.topic.toLowerCase().includes(activeSearch));
+      }
+
+      if (claims.length === 0) {
+        claimsList.innerHTML = `<div class="empty-state"><p>No claims match the active filter criteria.</p></div>`;
+        return;
+      }
+
+      claimsList.innerHTML = claims.map(c => `
+        <div class="claim-item" onclick="openClaimDrawer('${c.claim_id}')" style="cursor: pointer;">
+          <div class="claim-content">
+            <div class="claim-badges">
+              <span class="pill ${escapeHtml(c.status)}">${escapeHtml(c.status)}</span>
+              <span class="pill topic">${escapeHtml(c.topic)}</span>
+              <span style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">${escapeHtml(c.type)}</span>
+            </div>
+            <p class="claim-statement">"${escapeHtml(c.statement)}"</p>
+            <div class="claim-meta">
+              <span>Source: ${escapeHtml(c.source_doc_id)}</span> · <span>Date: ${escapeHtml(c.timestamp)}</span> · <span>ID: ${escapeHtml(c.claim_id)}</span>
+            </div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-dim);"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+      `).join("");
+    }
+
+    function renderDocuments(docs) {
+      if (!docs || docs.length === 0) {
+        docsList.innerHTML = `<div class="empty-state"><p>No documents currently loaded.</p></div>`;
+        return;
+      }
+
+      docsList.innerHTML = docs.map(doc => `
+        <div class="doc-editor-card">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
+            <h3 style="font-size: 16px; font-weight: 700;">${escapeHtml(doc.title)}</h3>
+            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--cyan);">${escapeHtml(doc.doc_id)} · v${escapeHtml(doc.version)} · ${escapeHtml(doc.timestamp)}</span>
+          </div>
+          <div style="background: rgba(8, 12, 20, 0.7); border-radius: 6px; padding: 14px; font-size: 13px; font-family: var(--font-mono); white-space: pre-wrap; color: var(--text-muted); border: 1px solid var(--border);">${escapeHtml(doc.content)}</div>
+        </div>
+      `).join("");
+    }
+
+    // Graph Visualization Engine
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      drawGraph();
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    function initGraph(graphData) {
+      if (!graphData || !graphData.nodes) return;
+      resizeCanvas();
+
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      // Layout nodes in a circle or force simulation
+      const total = graphData.nodes.length;
+      nodes = graphData.nodes.map((n, i) => {
+        const angle = (i / total) * 2 * Math.PI;
+        const radius = Math.min(width, height) * 0.35;
+        return {
+          ...n,
+          x: width / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
+          y: height / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 40,
+          vx: 0,
+          vy: 0,
+          radius: n.type === "DOCUMENT" ? 22 : 14,
+        };
+      });
+
+      // Link edges
+      const nodeMap = new Map(nodes.map(n => [n.id, n]));
+      edges = graphData.edges.map(e => ({
+        ...e,
+        sourceNode: nodeMap.get(e.source),
+        targetNode: nodeMap.get(e.target),
+      })).filter(e => e.sourceNode && e.targetNode);
+
+      // Run Physics Simulation
+      panX = 0;
+      panY = 0;
+      zoom = 1;
+      simulatePhysics();
+    }
+
+    function simulatePhysics() {
+      let iter = 0;
+      simulationRunning = true;
+      function step() {
+        if (!simulationRunning) return;
+        iter++;
+        
+        // Repulsion
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const dx = nodes[j].x - nodes[i].x;
+            const dy = nodes[j].y - nodes[i].y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            if (dist < 220) {
+              const force = (220 - dist) / dist * 0.04;
+              nodes[i].x -= dx * force;
+              nodes[i].y -= dy * force;
+              nodes[j].x += dx * force;
+              nodes[j].y += dy * force;
+            }
+          }
+        }
+
+        // Edge attraction
+        edges.forEach(e => {
+          const dx = e.targetNode.x - e.sourceNode.x;
+          const dy = e.targetNode.y - e.sourceNode.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const targetDist = e.relation === "CONTRADICTS" ? 180 : 110;
+          const force = (dist - targetDist) * 0.02;
+          e.sourceNode.x += (dx / dist) * force;
+          e.sourceNode.y += (dy / dist) * force;
+          e.targetNode.x -= (dx / dist) * force;
+          e.targetNode.y -= (dy / dist) * force;
+        });
+
+        drawGraph();
+        if (iter < 120) {
+          requestAnimationFrame(step);
+        } else {
+          simulationRunning = false;
+        }
+      }
+      step();
+    }
+
+    function drawGraph() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.translate(width / 2 + panX, height / 2 + panY);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-width / 2, -height / 2);
+
+      // Draw Edges
+      edges.forEach(e => {
+        ctx.beginPath();
+        ctx.strokeStyle = e.color || "#64748b";
+        ctx.lineWidth = e.relation === "CONTRADICTS" ? 2.5 : 1.5;
+        if (e.dashed) {
+          ctx.setLineDash([6, 6]);
+        } else {
+          ctx.setLineDash([]);
+        }
+        ctx.moveTo(e.sourceNode.x, e.sourceNode.y);
+        ctx.lineTo(e.targetNode.x, e.targetNode.y);
+        ctx.stroke();
+
+        // Edge label if contradiction
+        if (e.relation === "CONTRADICTS") {
+          const midX = (e.sourceNode.x + e.targetNode.x) / 2;
+          const midY = (e.sourceNode.y + e.targetNode.y) / 2;
+          ctx.fillStyle = "#ef4444";
+          ctx.font = "bold 10px JetBrains Mono";
+          ctx.fillText("CONFLICT", midX - 24, midY - 6);
+        }
+      });
+      ctx.setLineDash([]);
+
+      // Draw Nodes
+      nodes.forEach(n => {
+        // Glow
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius + 4, 0, 2 * Math.PI);
+        ctx.fillStyle = n.color + "33";
+        ctx.fill();
+
+        // Core Node
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = n.color;
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = "#f8fafc";
+        ctx.font = n.type === "DOCUMENT" ? "bold 12px Outfit" : "500 11px Inter";
+        const labelText = n.type === "DOCUMENT" ? n.id : (n.topic || "Claim");
+        ctx.fillText(labelText, n.x - ctx.measureText(labelText).width / 2, n.y + n.radius + 14);
+      });
+
+      ctx.restore();
+    }
+
+    // Graph Interactivity (Pan, Zoom, Drag, Click)
+    canvas.addEventListener("mousedown", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = (e.clientX - rect.left - (rect.width / 2 + panX)) / zoom + rect.width / 2;
+      const mouseY = (e.clientY - rect.top - (rect.height / 2 + panY)) / zoom + rect.height / 2;
+
+      // Check if clicked on a node
+      for (const n of nodes) {
+        const dx = mouseX - n.x;
+        const dy = mouseY - n.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= n.radius + 4) {
+          draggedNode = n;
+          openClaimDrawer(n.id);
+          return;
+        }
+      }
+
+      isDragging = true;
+      dragStartX = e.clientX - panX;
+      dragStartY = e.clientY - panY;
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (draggedNode) {
+        const rect = canvas.getBoundingClientRect();
+        draggedNode.x = (e.clientX - rect.left - (rect.width / 2 + panX)) / zoom + rect.width / 2;
+        draggedNode.y = (e.clientY - rect.top - (rect.height / 2 + panY)) / zoom + rect.height / 2;
+        drawGraph();
+      } else if (isDragging) {
+        panX = e.clientX - dragStartX;
+        panY = e.clientY - dragStartY;
+        drawGraph();
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      draggedNode = null;
+    });
+
+    canvas.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      zoom = Math.max(0.4, Math.min(3, zoom * zoomFactor));
+      drawGraph();
+    });
+
+    document.getElementById("zoomInBtn").addEventListener("click", () => { zoom = Math.min(3, zoom * 1.2); drawGraph(); });
+    document.getElementById("zoomOutBtn").addEventListener("click", () => { zoom = Math.max(0.4, zoom * 0.8); drawGraph(); });
+    document.getElementById("resetGraphBtn").addEventListener("click", () => { zoom = 1; panX = 0; panY = 0; drawGraph(); });
+
+    // Node Drawer
+    const nodeDrawer = document.getElementById("nodeDrawer");
+    const drawerTitle = document.getElementById("drawerTitle");
+    const drawerBody = document.getElementById("drawerBody");
+    document.getElementById("closeDrawerBtn").addEventListener("click", () => nodeDrawer.classList.remove("open"));
+
+    function openClaimDrawer(id) {
+      if (!currentAuditData) return;
+      const claim = currentAuditData.claims.find(c => c.claim_id === id);
+      const doc = currentAuditData.documents.find(d => d.doc_id === id);
+
+      if (claim) {
+        drawerTitle.textContent = `Claim ${claim.claim_id}`;
+        drawerBody.innerHTML = `
+          <div style="margin-bottom: 16px;">
+            <span class="pill ${escapeHtml(claim.status)}">${escapeHtml(claim.status)}</span>
+            <span class="pill topic">${escapeHtml(claim.topic)}</span>
+            <span class="pill">${escapeHtml(claim.type)}</span>
+          </div>
+          <div style="background: rgba(8, 12, 20, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 18px;">
+            <h4 style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;">Proposition Statement</h4>
+            <p style="font-size: 15px; font-weight: 600; line-height: 1.5;">"${escapeHtml(claim.statement)}"</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <div><strong style="color: var(--text-dim);">Source Document:</strong> ${escapeHtml(claim.source_doc_id)}</div>
+            <div><strong style="color: var(--text-dim);">Document Timestamp:</strong> ${escapeHtml(claim.timestamp)}</div>
+            <div><strong style="color: var(--text-dim);">Prerequisite Dependencies:</strong> ${claim.dependencies && claim.dependencies.length ? claim.dependencies.join(", ") : "None (Root proposition)"}</div>
+          </div>
+        `;
+        nodeDrawer.classList.add("open");
+      } else if (doc) {
+        drawerTitle.textContent = `Document ${doc.doc_id}`;
+        drawerBody.innerHTML = `
+          <h3 style="font-size: 18px; margin-bottom: 8px;">${escapeHtml(doc.title)}</h3>
+          <div style="font-size: 12px; color: var(--cyan); font-family: var(--font-mono); margin-bottom: 16px;">Version ${escapeHtml(doc.version)} · Timestamp ${escapeHtml(doc.timestamp)}</div>
+          <div style="background: rgba(8, 12, 20, 0.8); border: 1px solid var(--border); border-radius: 8px; padding: 14px; font-size: 13px; font-family: var(--font-mono); white-space: pre-wrap;">${escapeHtml(doc.content)}</div>
+        `;
+        nodeDrawer.classList.add("open");
+      }
+    }
+
+    // Pair Conflict Sandbox
+    document.getElementById("verifyPairBtn").addEventListener("click", async () => {
+      const stmtA = document.getElementById("sandboxA").value.trim();
+      const dateA = document.getElementById("sandboxDateA").value.trim();
+      const topicA = document.getElementById("sandboxTopicA").value.trim();
+
+      const stmtB = document.getElementById("sandboxB").value.trim();
+      const dateB = document.getElementById("sandboxDateB").value.trim();
+      const topicB = document.getElementById("sandboxTopicB").value.trim();
+
+      const mode = modeSelect.value;
+      const pairResult = document.getElementById("pairResult");
+      pairResult.hidden = false;
+      pairResult.innerHTML = '<div style="color: var(--cyan);"><span class="spinner" style="display: inline-block; vertical-align: middle; margin-right: 8px;"></span> Analyzing semantic divergence...</div>';
+
+      try {
+        const res = await fetch("/api/verify-pair", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ statement_a: stmtA, date_a: dateA, topic_a: topicA, statement_b: stmtB, date_b: dateB, topic_b: topicB, mode })
+        });
+        const data = await res.json();
+        if (data.contradiction) {
+          pairResult.innerHTML = `
+            <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 8px; padding: 16px;">
+              <strong style="color: #fda4af;">⚠ DIRECT CONTRADICTION DETECTED</strong>
+              <p style="margin-top: 6px; font-size: 14px; color: var(--text-main);">${escapeHtml(data.explanation)}</p>
+            </div>
+          `;
+        } else {
+          pairResult.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 16px;">
+              <strong style="color: #6ee7b7;">✓ NO MUTUAL CONFLICT</strong>
+              <p style="margin-top: 6px; font-size: 14px; color: var(--text-main);">${escapeHtml(data.explanation)}</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        pairResult.innerHTML = `<div style="color: var(--rose);">Error: ${escapeHtml(err.message)}</div>`;
+      }
+    });
+
+    // Export Report
+    exportReportBtn.addEventListener("click", () => {
+      if (!currentAuditData) {
+        alert("Please run an intelligence audit first before exporting.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(currentAuditData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `claim-graph-audit-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Helper HTML escape
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    // Initialize on load
+    window.addEventListener("DOMContentLoaded", () => {
+      checkHealth();
+      runAudit();
+    });
+  </script>
+</body>
+</html>
