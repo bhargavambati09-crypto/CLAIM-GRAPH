@@ -95,7 +95,7 @@ class OllamaClient:
                     return json.loads(cleaned[start_brace:end_brace + 1])
             elif start_bracket != -1:
                 end_bracket = cleaned.rfind("]")
-                if end_brace != -1:
+                if end_bracket != -1:
                     return json.loads(cleaned[start_bracket:end_bracket + 1])
             raise ValueError(f"Could not extract valid JSON from response: {raw_text[:200]}")
 

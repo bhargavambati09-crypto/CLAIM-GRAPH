@@ -839,6 +839,43 @@
       .app-container { padding: 18px 14px 60px; }
       .controls-panel { padding: 16px; }
     }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 13, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-md);
+      max-width: 520px;
+      width: 100%;
+      padding: 26px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(6, 182, 212, 0.15);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
   </style>
 </head>
 <body>
@@ -863,17 +900,18 @@
       </div>
       
       <div class="header-badges">
-        <div class="badge">
-          <span class="badge-dot"></span>
-          <span>Engine: <strong id="engineStatusText">Dual AI Ready</strong></span>
+        <div class="badge" id="engineStatusBadge" style="cursor: pointer;" title="Engine status - click to configure backend">
+          <span class="badge-dot" id="engineDot"></span>
+          <span>Engine: <strong id="engineStatusText">Client-Side Semantic Engine</strong></span>
         </div>
-        <div class="badge">
-          <span>Local URL:</span>
-          <a class="badge-url" href="http://localhost:8000" target="_blank" id="localUrlLink">localhost:8000</a>
+        <div class="badge" id="backendBadge" style="cursor: pointer;" title="Configure Backend API Endpoint">
+          <span style="color: var(--cyan); font-weight: 600;">API:</span>
+          <span id="apiBackendText">In-Browser (Standalone)</span>
+          <span style="font-size: 11px; margin-left: 2px; opacity: 0.8;">⚙</span>
         </div>
         <div class="badge" id="publicUrlBadge">
-          <span>Public URL:</span>
-          <a class="badge-url" href="https://dry-ladybug-63.loca.lt" target="_blank" id="publicUrlLink">dry-ladybug-63.loca.lt</a>
+          <span>Live URL:</span>
+          <a class="badge-url" href="https://claim-graph.netlify.app" target="_blank" id="publicUrlLink">claim-graph.netlify.app</a>
         </div>
       </div>
     </header>
@@ -1067,6 +1105,35 @@
           <h2>Ingested Source Documents</h2>
           <button class="btn btn-secondary" id="addNewDocBtn" style="padding: 7px 14px; font-size: 12px;">+ Add Custom Document</button>
         </div>
+        <div id="customDocForm" style="display: none; background: rgba(14, 20, 31, 0.95); border: 1px solid var(--border-focus); border-radius: var(--radius-md); padding: 20px; margin: 16px 24px;">
+          <h3 style="font-size: 16px; margin-bottom: 14px; color: var(--cyan);">Add Source Specification Document</h3>
+          <div style="display: grid; grid-template-columns: 140px 1fr 120px 140px; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Doc ID</label>
+              <input type="text" id="newDocId" placeholder="DOC-3" style="width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Title</label>
+              <input type="text" id="newDocTitle" placeholder="Storage Policy Specification" style="width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Version</label>
+              <input type="text" id="newDocVersion" placeholder="2.1.0" style="width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Timestamp</label>
+              <input type="text" id="newDocDate" placeholder="YYYY-MM-DD" style="width: 100%;">
+            </div>
+          </div>
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); display: block; margin-bottom: 4px;">Specification Content (Double-spaced paragraphs for separate chunks)</label>
+            <textarea id="newDocContent" rows="4" placeholder="Enter propositions or requirements here..." style="width: 100%;"></textarea>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-secondary" id="cancelAddDocBtn" type="button">Cancel</button>
+            <button class="btn btn-primary" id="saveAddDocBtn" type="button">Save &amp; Ingest Document</button>
+          </div>
+        </div>
         <div class="panel-body" id="docsList"></div>
       </div>
     </div>
@@ -1112,6 +1179,31 @@
       <div id="drawerBody"></div>
     </aside>
 
+    <!-- Backend API Config Modal -->
+    <div id="apiConfigModal" class="modal-overlay" style="display: none;">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Backend API Connection</h3>
+          <button class="close-btn" id="closeApiModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            CLAIM GRAPH runs 100% inside your browser by default with zero dependencies.
+            If you have the Python backend (<code style="color: var(--cyan);">app.py</code>) running locally with Ollama or hosted on a server, enter its endpoint below:
+          </p>
+          <div class="select-group" style="margin-bottom: 16px;">
+            <label for="apiUrlInput">Backend Base URL</label>
+            <input type="text" id="apiUrlInput" placeholder="http://localhost:8000" style="width: 100%; font-family: var(--font-mono);">
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+            <button class="btn btn-secondary" id="resetApiStandaloneBtn" type="button">Use Standalone In-Browser</button>
+            <button class="btn btn-primary" id="saveApiUrlBtn" type="button">Connect &amp; Test</button>
+          </div>
+          <div id="apiModalStatus" style="margin-top: 14px; font-size: 13px;" hidden></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <footer>
       <div>
@@ -1129,6 +1221,96 @@
     let customDocuments = [];
     let activeFilter = "ALL";
     let activeSearch = "";
+    let backendAvailable = false;
+    let customApiBaseUrl = localStorage.getItem("claimgraph_api_url") || "";
+
+    // Built-in Benchmark Scenarios
+    const BUILTIN_SCENARIOS = {
+      cloud_distributed: {
+        id: "cloud_distributed",
+        title: "Cloud Distributed Engine Architecture",
+        description: "Multi-version migration from Raft + Local NVMe to Paxos + Object Storage, invalidating sub-5ms latency conclusion.",
+        documents: [
+          {
+            doc_id: "ARCH-V1",
+            title: "Core System Architecture Specification",
+            version: "1.0.0",
+            timestamp: "2025-01-15",
+            content: "The cluster size is strictly limited to 16 nodes due to Raft consensus constraints.\n\nAll state persistence operations must execute directly on local NVMe solid-state storage."
+          },
+          {
+            doc_id: "ARCH-V2",
+            title: "Distributed Engine Architecture Migration",
+            version: "2.0.0",
+            timestamp: "2025-08-20",
+            content: "The cluster size scales to 64 nodes through a leaderless Paxos ring.\n\nAll state persistence operations run on network-attached object storage volumes."
+          },
+          {
+            doc_id: "BENCH-AUDIT",
+            title: "Q3 Performance Evaluation Report",
+            version: "1.1.0",
+            timestamp: "2025-09-01",
+            content: "The system achieves sub-5ms write latency as a direct consequence of local NVMe storage."
+          }
+        ]
+      },
+      auth_microservices: {
+        id: "auth_microservices",
+        title: "Microservices Authentication Architecture",
+        description: "Evolution from stateful Redis session tokens to stateless Ed25519 tokens, invalidating instant revocation guarantee.",
+        documents: [
+          {
+            doc_id: "AUTH-V1",
+            title: "Identity & Access Specification",
+            version: "1.0.0",
+            timestamp: "2025-02-10",
+            content: "All API services authenticate via centralized stateful Redis session stores.\n\nSession storage requires dedicated Redis cluster instances in each availability zone."
+          },
+          {
+            doc_id: "AUTH-V2",
+            title: "Zero-Trust Stateless Token Migration",
+            version: "2.0.0",
+            timestamp: "2025-07-15",
+            content: "All API services authenticate using decentralized stateless Ed25519 cryptographically signed tokens.\n\nToken validation executes purely in edge memory without external Redis dependency."
+          },
+          {
+            doc_id: "SEC-AUDIT",
+            title: "Information Security Compliance Review",
+            version: "1.2.0",
+            timestamp: "2025-08-01",
+            content: "The system guarantees instant token revocation across all gateways as a direct consequence of centralized stateful Redis session stores."
+          }
+        ]
+      },
+      distributed_database: {
+        id: "distributed_database",
+        title: "Database Durability & Consensus Protocol",
+        description: "Transition from synchronous cross-datacenter replication to asynchronous quorum replication, invalidating RPO=0 compliance.",
+        documents: [
+          {
+            doc_id: "DB-V1",
+            title: "High-Durability Data Storage Engine",
+            version: "1.0.0",
+            timestamp: "2025-03-01",
+            content: "All database writes require synchronous replication across 3 physical datacenters before acknowledgment.\n\nData integrity checks run on every synchronous transaction boundary."
+          },
+          {
+            doc_id: "DB-V2",
+            title: "High-Throughput Quorum Engine Migration",
+            version: "2.0.0",
+            timestamp: "2025-10-10",
+            content: "All database writes utilize asynchronous multi-region quorum replication to minimize network overhead.\n\nReplication operates with eventual consistency across datacenters."
+          },
+          {
+            doc_id: "COMPLIANCE-DOC",
+            title: "Disaster Recovery & Financial Compliance",
+            version: "1.1.0",
+            timestamp: "2025-11-05",
+            content: "Zero data loss recovery point objective (RPO=0) is guaranteed as a direct consequence of synchronous replication across 3 physical datacenters."
+          }
+        ]
+      }
+    };
 
     // DOM Elements
     const runAuditBtn = document.getElementById("runAuditBtn");
@@ -1140,6 +1322,10 @@
     const engineStatusText = document.getElementById("engineStatusText");
     const exportReportBtn = document.getElementById("exportReportBtn");
     const publicUrlLink = document.getElementById("publicUrlLink");
+    const engineDot = document.getElementById("engineDot");
+    const apiBackendText = document.getElementById("apiBackendText");
+    const backendBadge = document.getElementById("backendBadge");
+    const engineStatusBadge = document.getElementById("engineStatusBadge");
 
     // Metrics elements
     const statTotalClaims = document.getElementById("statTotalClaims");
@@ -1172,34 +1358,413 @@
     let dragStartY = 0;
     let draggedNode = null;
 
-    // Check System Health & Tunnels
-    async function checkHealth() {
-      try {
-        const res = await fetch("/health");
-        const data = await res.json();
-        if (data.ollama_available) {
-          engineStatusText.textContent = `Ollama (${data.model}) Ready`;
-          engineStatusText.style.color = "var(--emerald)";
-        } else {
-          engineStatusText.textContent = `Fast Neural Engine (Ollama Standby)`;
-          engineStatusText.style.color = "var(--cyan)";
+    // Modal elements
+    const apiConfigModal = document.getElementById("apiConfigModal");
+    const closeApiModalBtn = document.getElementById("closeApiModalBtn");
+    const saveApiUrlBtn = document.getElementById("saveApiUrlBtn");
+    const resetApiStandaloneBtn = document.getElementById("resetApiStandaloneBtn");
+    const apiUrlInput = document.getElementById("apiUrlInput");
+    const apiModalStatus = document.getElementById("apiModalStatus");
+
+    // Custom Document elements
+    const addNewDocBtn = document.getElementById("addNewDocBtn");
+    const customDocForm = document.getElementById("customDocForm");
+    const cancelAddDocBtn = document.getElementById("cancelAddDocBtn");
+    const saveAddDocBtn = document.getElementById("saveAddDocBtn");
+
+    // --- CLIENT-SIDE SEMANTIC ENGINE IMPLEMENTATION ---
+    function extractClaimsFromText(text, chunkId, doc) {
+      const sentences = text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+      const claims = [];
+
+      const topicKeywords = {
+        "Cluster Size": ["cluster size", "nodes", "raft", "paxos", "ring"],
+        "Storage Architecture": ["storage", "nvme", "solid-state", "object storage", "persistence", "state"],
+        "Latency Performance": ["latency", "write latency", "sub-5ms", "throughput", "response time"],
+        "Authentication": ["jwt", "oauth", "token", "session", "ed25519", "auth", "redis", "revocation"],
+        "Replication": ["replica", "quorum", "consensus", "replication", "sync", "synchronous", "asynchronous", "rpo"],
+        "Data Durability": ["durability", "integrity", "rpo", "data loss", "disaster recovery"]
+      };
+
+      sentences.forEach((stmt, i) => {
+        const stmtClean = stmt.replace(/[.]+$/, "").trim();
+        const lowerStmt = stmtClean.toLowerCase();
+
+        let assignedTopic = "General Specification";
+        for (const [topic, kws] of Object.entries(topicKeywords)) {
+          if (kws.some(kw => lowerStmt.includes(kw))) {
+            assignedTopic = topic;
+            break;
+          }
         }
-      } catch (e) {
-        engineStatusText.textContent = "Offline / Reconnecting";
+
+        let cType = "FACT";
+        if (["consequence of", "direct result", "therefore", "achieves", "yields", "guaranteed as"].some(m => lowerStmt.includes(m))) {
+          cType = "CONCLUSION";
+        } else if (["must", "strictly", "limited to", "scales to", "requires", "shall", "all api services", "all database writes"].some(m => lowerStmt.includes(m))) {
+          cType = "SPECIFICATION";
+        } else if (["assuming", "assumes", "expected"].some(m => lowerStmt.includes(m))) {
+          cType = "ASSUMPTION";
+        }
+
+        claims.push({
+          claim_id: `${chunkId}_cl${i + 1}`,
+          statement: stmtClean + ".",
+          topic: assignedTopic,
+          type: cType,
+          status: "ACTIVE",
+          source_chunk_id: chunkId,
+          source_doc_id: doc.doc_id,
+          timestamp: doc.timestamp,
+          doc_version: doc.version,
+          dependencies: []
+        });
+      });
+
+      return claims;
+    }
+
+    function autoLinkDependencies(claims) {
+      for (const cid in claims) {
+        const claim = claims[cid];
+        const stmtLow = claim.statement.toLowerCase();
+        if (claim.type === "CONCLUSION" || stmtLow.includes("consequence of") || stmtLow.includes("direct result") || stmtLow.includes("guaranteed as")) {
+          for (const pid in claims) {
+            if (pid !== cid && claims[pid].type !== "CONCLUSION") {
+              const pLow = claims[pid].statement.toLowerCase();
+              if (
+                (stmtLow.includes("nvme") && pLow.includes("nvme")) ||
+                (stmtLow.includes("storage") && pLow.includes("storage")) ||
+                (stmtLow.includes("nodes") && pLow.includes("nodes")) ||
+                (stmtLow.includes("redis") && pLow.includes("redis")) ||
+                (stmtLow.includes("session") && pLow.includes("session")) ||
+                (stmtLow.includes("synchronous") && pLow.includes("synchronous")) ||
+                (stmtLow.includes("datacenter") && pLow.includes("datacenter"))
+              ) {
+                if (!claim.dependencies.includes(pid)) {
+                  claim.dependencies.push(pid);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function sharesTopicOrContext(c1, c2) {
+      if (c1.topic && c2.topic && c1.topic.toLowerCase() === c2.topic.toLowerCase() && !["general", "general specification", "other"].includes(c1.topic.toLowerCase())) {
+        return true;
+      }
+      const stopwords = new Set(["the", "is", "a", "an", "to", "of", "and", "in", "on", "all", "for", "due", "are", "be", "this", "that", "with", "from", "must", "run"]);
+      const words1 = (c1.statement.toLowerCase().match(/\b\w{3,}\b/g) || []).filter(w => !stopwords.has(w));
+      const words2 = new Set((c2.statement.toLowerCase().match(/\b\w{3,}\b/g) || []).filter(w => !stopwords.has(w)));
+      let overlap = 0;
+      for (const w of words1) {
+        if (words2.has(w)) overlap++;
+      }
+      return overlap >= 2;
+    }
+
+    function checkContradictionPairDeterministic(claimA, claimB) {
+      const stA = claimA.statement.toLowerCase();
+      const stB = claimB.statement.toLowerCase();
+      const conflictReasons = [];
+
+      // 1. Capacity / number conflict
+      const numA = (stA.match(/\b\d+\b/g) || []);
+      const numB = (stB.match(/\b\d+\b/g) || []);
+      if (numA.length > 0 && numB.length > 0 && JSON.stringify(numA) !== JSON.stringify(numB)) {
+        if ((stA.includes("node") || stA.includes("cluster")) && (stB.includes("node") || stB.includes("cluster"))) {
+          conflictReasons.push(`Capacity contradiction: ${numA[0]} nodes vs ${numB[0]} nodes`);
+        }
       }
 
-      // Check current window location for public url
+      // 2. Storage topology conflict
+      if ((stA.includes("nvme") || stA.includes("local")) && (stB.includes("object storage") || stB.includes("network-attached"))) {
+        conflictReasons.push("Storage topology shift: Local NVMe solid-state storage conflicts with network-attached object storage");
+      } else if ((stA.includes("object storage") || stA.includes("network-attached")) && (stB.includes("nvme") || stB.includes("local"))) {
+        conflictReasons.push("Storage topology shift: Network-attached object storage conflicts with local NVMe solid-state storage");
+      }
+
+      // 3. Consensus protocol conflict
+      if (stA.includes("raft") && stB.includes("paxos")) {
+        conflictReasons.push("Consensus model divergence: Raft constraints conflict with leaderless Paxos ring");
+      } else if (stA.includes("paxos") && stB.includes("raft")) {
+        conflictReasons.push("Consensus model divergence: Paxos ring conflicts with Raft constraints");
+      }
+
+      // 4. Auth conflict
+      if (stA.includes("session") && stB.includes("stateless")) {
+        conflictReasons.push("Authentication architecture divergence: Centralized stateful Redis session conflicts with decentralized stateless Ed25519 tokens");
+      } else if (stA.includes("stateless") && stB.includes("session")) {
+        conflictReasons.push("Authentication architecture divergence: Stateless token mechanism conflicts with centralized stateful session stores");
+      }
+
+      // 5. Database replication conflict
+      if (stA.includes("synchronous") && (stB.includes("asynchronous") || stB.includes("eventual"))) {
+        conflictReasons.push("Replication paradigm conflict: Synchronous cross-datacenter replication conflicts with asynchronous quorum eventual consistency");
+      } else if ((stA.includes("asynchronous") || stA.includes("eventual")) && stB.includes("synchronous")) {
+        conflictReasons.push("Replication paradigm conflict: Asynchronous quorum replication conflicts with synchronous cross-datacenter replication");
+      }
+
+      // 6. Generic scaling conflict
+      if (stA.includes("strictly limited to") && stB.includes("scales to")) {
+        conflictReasons.push("Scaling constraint conflict: Strict node limit contradicted by dynamic scaling ring");
+      }
+
+      if (conflictReasons.length > 0) {
+        return {
+          claim_id_source: claimA.claim_id,
+          claim_id_target: claimB.claim_id,
+          contradiction_type: "DIRECT_CONFLICT",
+          explanation: conflictReasons[0],
+          detected_at: new Date().toISOString()
+        };
+      }
+      return null;
+    }
+
+    function reconcileClaims(claims, documents) {
+      const claimList = Object.values(claims);
+      const contradictions = [];
+
+      for (let i = 0; i < claimList.length; i++) {
+        for (let j = i + 1; j < claimList.length; j++) {
+          const c1 = claimList[i];
+          const c2 = claimList[j];
+          if (c1.source_doc_id !== c2.source_doc_id && sharesTopicOrContext(c1, c2)) {
+            const edge = checkContradictionPairDeterministic(c1, c2);
+            if (edge) {
+              contradictions.push(edge);
+              if (c1.timestamp < c2.timestamp) {
+                c1.status = "SUPERSEDED";
+              } else if (c2.timestamp < c1.timestamp) {
+                c2.status = "SUPERSEDED";
+              } else {
+                c1.status = "CONTRADICTED";
+                c2.status = "CONTRADICTED";
+              }
+            }
+          }
+        }
+      }
+
+      // Invalidate dependent conclusions
+      for (const claim of claimList) {
+        if (claim.dependencies && claim.dependencies.length > 0) {
+          for (const depId of claim.dependencies) {
+            const depClaim = claims[depId];
+            if (!depClaim || depClaim.status === "SUPERSEDED" || depClaim.status === "CONTRADICTED") {
+              claim.status = "ORPHANED";
+              break;
+            }
+          }
+        }
+      }
+
+      return contradictions;
+    }
+
+    function buildOrphanedReport(claims) {
+      const orphaned = [];
+      for (const c of Object.values(claims)) {
+        if (c.status === "ORPHANED") {
+          const brokenDeps = (c.dependencies || [])
+            .filter(d => claims[d] && claims[d].status !== "ACTIVE")
+            .map(d => claims[d].statement);
+          orphaned.push({
+            claim_id: c.claim_id,
+            conclusion: c.statement,
+            document: c.source_doc_id,
+            invalidated_premises: brokenDeps
+          });
+        }
+      }
+      return orphaned;
+    }
+
+    function buildGraphData(documents, claims, contradictions) {
+      const nodes = [];
+      const edges = [];
+
+      for (const doc of documents) {
+        nodes.push({
+          id: doc.doc_id,
+          label: doc.title,
+          sublabel: `Doc ${doc.doc_id} · v${doc.version}`,
+          type: "DOCUMENT",
+          color: "#3b82f6",
+          timestamp: doc.timestamp
+        });
+      }
+
+      const colorMap = {
+        ACTIVE: "#10b981",
+        SUPERSEDED: "#f59e0b",
+        CONTRADICTED: "#ef4444",
+        ORPHANED: "#ec4899"
+      };
+
+      for (const c of Object.values(claims)) {
+        nodes.push({
+          id: c.claim_id,
+          label: c.statement,
+          topic: c.topic,
+          claim_type: c.type,
+          status: c.status,
+          doc_id: c.source_doc_id,
+          timestamp: c.timestamp,
+          type: "CLAIM",
+          color: colorMap[c.status] || "#94a3b8"
+        });
+
+        edges.push({
+          source: c.source_doc_id,
+          target: c.claim_id,
+          relation: "SUPPORTS",
+          color: "#475569",
+          dashed: false
+        });
+
+        if (c.dependencies) {
+          for (const depId of c.dependencies) {
+            edges.push({
+              source: depId,
+              target: c.claim_id,
+              relation: "DERIVES",
+              color: "#8b5cf6",
+              dashed: false
+            });
+          }
+        }
+      }
+
+      for (const edge of contradictions) {
+        edges.push({
+          source: edge.claim_id_source,
+          target: edge.claim_id_target,
+          relation: "CONTRADICTS",
+          color: "#ef4444",
+          dashed: true
+        });
+      }
+
+      return { nodes, edges };
+    }
+
+    function executeClientSideAudit(scenarioId = "cloud_distributed", customDocs = []) {
+      const startTime = performance.now();
+      let docs = [];
+
+      if (scenarioId === "custom" && customDocs.length > 0) {
+        docs = customDocs;
+      } else if (BUILTIN_SCENARIOS[scenarioId]) {
+        docs = BUILTIN_SCENARIOS[scenarioId].documents;
+      } else {
+        docs = BUILTIN_SCENARIOS.cloud_distributed.documents;
+      }
+
+      const claims = {};
+      for (const doc of docs) {
+        const paras = doc.content.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+        paras.forEach((para, pIdx) => {
+          const chunkId = `${doc.doc_id}_c${pIdx + 1}`;
+          const extracted = extractClaimsFromText(para, chunkId, doc);
+          for (const cl of extracted) {
+            claims[cl.claim_id] = cl;
+          }
+        });
+      }
+
+      autoLinkDependencies(claims);
+      const contradictions = reconcileClaims(claims, docs);
+      const orphaned = buildOrphanedReport(claims);
+      const graph = buildGraphData(docs, claims, contradictions);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+      const contradictionDetails = contradictions.map(e => ({
+        source_claim_id: e.claim_id_source,
+        target_claim_id: e.claim_id_target,
+        explanation: e.explanation,
+        source_statement: claims[e.claim_id_source]?.statement || "",
+        target_statement: claims[e.claim_id_target]?.statement || "",
+        source_doc_id: claims[e.claim_id_source]?.source_doc_id || "",
+        target_doc_id: claims[e.claim_id_target]?.source_doc_id || "",
+        source_status: claims[e.claim_id_source]?.status || "",
+        target_status: claims[e.claim_id_target]?.status || ""
+      }));
+
+      const claimValues = Object.values(claims);
+      const activeCount = claimValues.filter(c => c.status === "ACTIVE").length;
+      const contradictedCount = claimValues.filter(c => c.status === "CONTRADICTED" || c.status === "SUPERSEDED").length;
+
+      return {
+        app_name: "CLAIM GRAPH",
+        execution_time_seconds: parseFloat(elapsed) || 0.02,
+        engine_used: "Client-Side Semantic Engine (In-Browser Zero Latency)",
+        mode: "fast",
+        summary: {
+          total_claims: claimValues.length,
+          active_claims: activeCount,
+          contradicted_claims: contradictedCount,
+          orphaned_conclusions: orphaned.length
+        },
+        documents: docs,
+        claims: claimValues,
+        contradictions: contradictionDetails,
+        orphaned_claims: orphaned,
+        graph: graph
+      };
+    }
+
+    // --- HEALTH CHECK & BACKEND STATUS ---
+    async function checkHealth() {
+      const targetBase = customApiBaseUrl ? customApiBaseUrl.replace(/\/$/, "") : "";
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const shouldProbe = targetBase || isLocal;
+
+      if (shouldProbe) {
+        try {
+          const res = await fetch(`${targetBase}/health`, { signal: AbortSignal.timeout(2000) });
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("application/json")) {
+            const data = await res.json();
+            backendAvailable = true;
+            if (data.ollama_available) {
+              engineStatusText.textContent = `Ollama (${data.model}) Ready`;
+              engineStatusText.style.color = "var(--emerald)";
+            } else {
+              engineStatusText.textContent = `Fast Neural Backend (Ollama Standby)`;
+              engineStatusText.style.color = "var(--cyan)";
+            }
+            if (engineDot) engineDot.style.background = "var(--emerald)";
+            if (apiBackendText) apiBackendText.textContent = targetBase ? new URL(targetBase).host : "localhost:8000";
+            return;
+          }
+        } catch (e) {
+          // Probe failed
+        }
+      }
+
+      // Standalone In-Browser engine
+      backendAvailable = false;
+      engineStatusText.textContent = "Client-Side Semantic Engine";
+      engineStatusText.style.color = "var(--emerald)";
+      if (engineDot) engineDot.style.background = "var(--emerald)";
+      if (apiBackendText) apiBackendText.textContent = "In-Browser (Standalone)";
+
+      // Update public url
       const currentHost = window.location.host;
       if (currentHost && !currentHost.includes("localhost") && !currentHost.includes("127.0.0.1")) {
         publicUrlLink.href = window.location.href;
         publicUrlLink.textContent = currentHost;
       } else {
-        publicUrlLink.textContent = "Generating...";
-        // Try to fetch public url from server if available
+        publicUrlLink.href = "https://claim-graph.netlify.app";
+        publicUrlLink.textContent = "claim-graph.netlify.app";
       }
     }
 
-    // Tabs
+    // --- TABS ---
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -1213,7 +1778,7 @@
       });
     });
 
-    // Run Audit
+    // --- RUN AUDIT ---
     async function runAudit() {
       runAuditBtn.disabled = true;
       runBtnLabel.textContent = "Extracting & Reconciling...";
@@ -1231,35 +1796,81 @@
         payload.documents = customDocuments;
       }
 
-      try {
-        const res = await fetch("/api/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      let auditData = null;
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Audit failed");
-
-        currentAuditData = data;
-        renderResults(data);
-        statusMessage.textContent = `Audit completed successfully via ${data.engine_used}.`;
-        statusMessage.style.color = "var(--emerald)";
-        executionTime.textContent = `Execution time: ${data.execution_time_seconds}s`;
-      } catch (err) {
-        statusMessage.textContent = `Error: ${err.message}`;
-        statusMessage.style.color = "var(--rose)";
-      } finally {
-        runAuditBtn.disabled = false;
-        runBtnLabel.textContent = "Run Intelligence Audit";
-        const spinner = document.getElementById("activeSpinner");
-        if (spinner) spinner.remove();
+      // Try backend if connected
+      if (backendAvailable && mode !== "fast") {
+        try {
+          const targetBase = customApiBaseUrl ? customApiBaseUrl.replace(/\/$/, "") : "";
+          const res = await fetch(`${targetBase}/api/run`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(8000)
+          });
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("application/json")) {
+            auditData = await res.json();
+          }
+        } catch (e) {
+          console.warn("Backend request failed, falling back to client-side engine:", e);
+        }
       }
+
+      // Fall back to Client-Side Semantic Engine
+      if (!auditData) {
+        auditData = executeClientSideAudit(scenario, customDocuments);
+      }
+
+      currentAuditData = auditData;
+      renderResults(auditData);
+      statusMessage.textContent = `Audit completed successfully via ${auditData.engine_used}.`;
+      statusMessage.style.color = "var(--emerald)";
+      executionTime.textContent = `Execution time: ${auditData.execution_time_seconds}s`;
+
+      runAuditBtn.disabled = false;
+      runBtnLabel.textContent = "Run Intelligence Audit";
+      const spinner = document.getElementById("activeSpinner");
+      if (spinner) spinner.remove();
     }
 
     runAuditBtn.addEventListener("click", runAudit);
 
-    // Render Audit Results
+    // Scenario Switcher auto-audit
+    scenarioSelect.addEventListener("change", () => {
+      if (scenarioSelect.value === "custom") {
+        if (customDocuments.length === 0) {
+          customDocuments = [
+            {
+              doc_id: "SPEC-A",
+              title: "Edge Storage Policy V1",
+              version: "1.0.0",
+              timestamp: "2025-01-01",
+              content: "All edge nodes must retain transaction state on local NVMe solid-state storage.\n\nCluster replication interval is strictly locked to 500ms."
+            },
+            {
+              doc_id: "SPEC-B",
+              title: "Edge Storage Policy V2",
+              version: "2.0.0",
+              timestamp: "2025-06-01",
+              content: "All edge nodes run persistence on network-attached object storage volumes.\n\nReplication interval operates with eventual consistency."
+            },
+            {
+              doc_id: "AUDIT-C",
+              title: "Latency Guarantee Audit",
+              version: "1.0.0",
+              timestamp: "2025-07-01",
+              content: "System achieves sub-5ms write latency as a direct consequence of local NVMe solid-state storage."
+            }
+          ];
+        }
+      }
+      runAudit();
+    });
+
+    modeSelect.addEventListener("change", runAudit);
+
+    // --- RENDER AUDIT RESULTS ---
     function renderResults(data) {
       // 1. Stats
       statTotalClaims.textContent = data.summary.total_claims;
@@ -1388,18 +1999,64 @@
         return;
       }
 
-      docsList.innerHTML = docs.map(doc => `
+      docsList.innerHTML = docs.map(doc => {
+        const isCustom = customDocuments.some(cd => cd.doc_id === doc.doc_id);
+        return `
         <div class="doc-editor-card">
           <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px;">
-            <h3 style="font-size: 16px; font-weight: 700;">${escapeHtml(doc.title)}</h3>
-            <span style="font-family: var(--font-mono); font-size: 12px; color: var(--cyan);">${escapeHtml(doc.doc_id)} · v${escapeHtml(doc.version)} · ${escapeHtml(doc.timestamp)}</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 style="font-size: 16px; font-weight: 700;">${escapeHtml(doc.title)}</h3>
+              ${isCustom ? '<span class="pill" style="background: rgba(6,182,212,0.15); color: var(--cyan); font-size: 11px;">Custom</span>' : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 12px; color: var(--cyan);">${escapeHtml(doc.doc_id)} · v${escapeHtml(doc.version)} · ${escapeHtml(doc.timestamp)}</span>
+              ${isCustom ? `<button onclick="deleteCustomDoc('${doc.doc_id}')" class="btn btn-secondary" style="padding: 2px 8px; font-size: 11px; color: var(--rose); border-color: rgba(244,63,94,0.3);">Remove</button>` : ''}
+            </div>
           </div>
           <div style="background: rgba(8, 12, 20, 0.7); border-radius: 6px; padding: 14px; font-size: 13px; font-family: var(--font-mono); white-space: pre-wrap; color: var(--text-muted); border: 1px solid var(--border);">${escapeHtml(doc.content)}</div>
         </div>
-      `).join("");
+      `;
+      }).join("");
     }
 
-    // Graph Visualization Engine
+    window.deleteCustomDoc = function(docId) {
+      customDocuments = customDocuments.filter(d => d.doc_id !== docId);
+      runAudit();
+    };
+
+    // Custom Document Form handlers
+    addNewDocBtn.addEventListener("click", () => {
+      customDocForm.style.display = customDocForm.style.display === "none" ? "block" : "none";
+      if (customDocForm.style.display === "block") {
+        document.getElementById("newDocId").value = `DOC-CUSTOM-${customDocuments.length + 1}`;
+        document.getElementById("newDocDate").value = new Date().toISOString().slice(0, 10);
+      }
+    });
+
+    cancelAddDocBtn.addEventListener("click", () => {
+      customDocForm.style.display = "none";
+    });
+
+    saveAddDocBtn.addEventListener("click", () => {
+      const docId = document.getElementById("newDocId").value.trim() || `DOC-CUSTOM-${customDocuments.length + 1}`;
+      const title = document.getElementById("newDocTitle").value.trim() || "Custom Technical Specification";
+      const version = document.getElementById("newDocVersion").value.trim() || "1.0.0";
+      const timestamp = document.getElementById("newDocDate").value.trim() || new Date().toISOString().slice(0, 10);
+      const content = document.getElementById("newDocContent").value.trim();
+
+      if (!content) {
+        alert("Please enter specification content.");
+        return;
+      }
+
+      customDocuments.push({ doc_id: docId, title, version, timestamp, content });
+      scenarioSelect.value = "custom";
+      customDocForm.style.display = "none";
+      document.getElementById("newDocContent").value = "";
+      runAudit();
+    });
+
+    // --- GRAPH VISUALIZATION ENGINE ---
     function resizeCanvas() {
       const rect = canvas.parentElement.getBoundingClientRect();
       canvas.width = rect.width * window.devicePixelRatio;
@@ -1417,7 +2074,6 @@
       const width = rect.width;
       const height = rect.height;
 
-      // Layout nodes in a circle or force simulation
       const total = graphData.nodes.length;
       nodes = graphData.nodes.map((n, i) => {
         const angle = (i / total) * 2 * Math.PI;
@@ -1432,7 +2088,6 @@
         };
       });
 
-      // Link edges
       const nodeMap = new Map(nodes.map(n => [n.id, n]));
       edges = graphData.edges.map(e => ({
         ...e,
@@ -1440,7 +2095,6 @@
         targetNode: nodeMap.get(e.target),
       })).filter(e => e.sourceNode && e.targetNode);
 
-      // Run Physics Simulation
       panX = 0;
       panY = 0;
       zoom = 1;
@@ -1518,7 +2172,6 @@
         ctx.lineTo(e.targetNode.x, e.targetNode.y);
         ctx.stroke();
 
-        // Edge label if contradiction
         if (e.relation === "CONTRADICTS") {
           const midX = (e.sourceNode.x + e.targetNode.x) / 2;
           const midY = (e.sourceNode.y + e.targetNode.y) / 2;
@@ -1531,13 +2184,11 @@
 
       // Draw Nodes
       nodes.forEach(n => {
-        // Glow
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius + 4, 0, 2 * Math.PI);
         ctx.fillStyle = n.color + "33";
         ctx.fill();
 
-        // Core Node
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.radius, 0, 2 * Math.PI);
         ctx.fillStyle = n.color;
@@ -1546,7 +2197,6 @@
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Label
         ctx.fillStyle = "#f8fafc";
         ctx.font = n.type === "DOCUMENT" ? "bold 12px Outfit" : "500 11px Inter";
         const labelText = n.type === "DOCUMENT" ? n.id : (n.topic || "Claim");
@@ -1556,13 +2206,12 @@
       ctx.restore();
     }
 
-    // Graph Interactivity (Pan, Zoom, Drag, Click)
+    // Graph Interactivity
     canvas.addEventListener("mousedown", (e) => {
       const rect = canvas.getBoundingClientRect();
       const mouseX = (e.clientX - rect.left - (rect.width / 2 + panX)) / zoom + rect.width / 2;
       const mouseY = (e.clientY - rect.top - (rect.height / 2 + panY)) / zoom + rect.height / 2;
 
-      // Check if clicked on a node
       for (const n of nodes) {
         const dx = mouseX - n.x;
         const dy = mouseY - n.y;
@@ -1613,7 +2262,7 @@
     const drawerBody = document.getElementById("drawerBody");
     document.getElementById("closeDrawerBtn").addEventListener("click", () => nodeDrawer.classList.remove("open"));
 
-    function openClaimDrawer(id) {
+    window.openClaimDrawer = function(id) {
       if (!currentAuditData) return;
       const claim = currentAuditData.claims.find(c => c.claim_id === id);
       const doc = currentAuditData.documents.find(d => d.doc_id === id);
@@ -1646,9 +2295,9 @@
         `;
         nodeDrawer.classList.add("open");
       }
-    }
+    };
 
-    // Pair Conflict Sandbox
+    // --- PAIR CONFLICT SANDBOX ---
     document.getElementById("verifyPairBtn").addEventListener("click", async () => {
       const stmtA = document.getElementById("sandboxA").value.trim();
       const dateA = document.getElementById("sandboxDateA").value.trim();
@@ -1663,13 +2312,7 @@
       pairResult.hidden = false;
       pairResult.innerHTML = '<div style="color: var(--cyan);"><span class="spinner" style="display: inline-block; vertical-align: middle; margin-right: 8px;"></span> Analyzing semantic divergence...</div>';
 
-      try {
-        const res = await fetch("/api/verify-pair", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ statement_a: stmtA, date_a: dateA, topic_a: topicA, statement_b: stmtB, date_b: dateB, topic_b: topicB, mode })
-        });
-        const data = await res.json();
+      function renderPairResult(data) {
         if (data.contradiction) {
           pairResult.innerHTML = `
             <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.4); border-radius: 8px; padding: 16px;">
@@ -1685,12 +2328,111 @@
             </div>
           `;
         }
-      } catch (err) {
-        pairResult.innerHTML = `<div style="color: var(--rose);">Error: ${escapeHtml(err.message)}</div>`;
+      }
+
+      // Try server if available
+      if (backendAvailable && mode !== "fast") {
+        try {
+          const targetBase = customApiBaseUrl ? customApiBaseUrl.replace(/\/$/, "") : "";
+          const res = await fetch(`${targetBase}/api/verify-pair`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ statement_a: stmtA, date_a: dateA, topic_a: topicA, statement_b: stmtB, date_b: dateB, topic_b: topicB, mode }),
+            signal: AbortSignal.timeout(5000)
+          });
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("application/json")) {
+            const data = await res.json();
+            renderPairResult(data);
+            return;
+          }
+        } catch (e) {
+          // Fall through to client verification
+        }
+      }
+
+      // Client verification
+      const claimA = { claim_id: "SANDBOX-A", statement: stmtA, timestamp: dateA, topic: topicA };
+      const claimB = { claim_id: "SANDBOX-B", statement: stmtB, timestamp: dateB, topic: topicB };
+      const conflict = checkContradictionPairDeterministic(claimA, claimB);
+
+      if (conflict) {
+        renderPairResult({ contradiction: true, explanation: conflict.explanation });
+      } else {
+        const sharesTopic = sharesTopicOrContext(claimA, claimB);
+        const reason = sharesTopic
+          ? "Both propositions align on technical domain without mutual contradiction or conflicting constraints."
+          : "Propositions discuss distinct architectural concepts with no direct operational conflict.";
+        renderPairResult({ contradiction: false, explanation: reason });
       }
     });
 
-    // Export Report
+    // --- API CONFIG MODAL LOGIC ---
+    function openApiModal() {
+      apiConfigModal.style.display = "flex";
+      apiUrlInput.value = customApiBaseUrl;
+      apiModalStatus.hidden = true;
+    }
+
+    function closeApiModal() {
+      apiConfigModal.style.display = "none";
+    }
+
+    if (backendBadge) backendBadge.addEventListener("click", openApiModal);
+    if (engineStatusBadge) engineStatusBadge.addEventListener("click", openApiModal);
+    if (closeApiModalBtn) closeApiModalBtn.addEventListener("click", closeApiModal);
+    if (apiConfigModal) {
+      apiConfigModal.addEventListener("click", (e) => {
+        if (e.target === apiConfigModal) closeApiModal();
+      });
+    }
+
+    if (resetApiStandaloneBtn) {
+      resetApiStandaloneBtn.addEventListener("click", () => {
+        customApiBaseUrl = "";
+        localStorage.removeItem("claimgraph_api_url");
+        if (apiBackendText) apiBackendText.textContent = "In-Browser (Standalone)";
+        backendAvailable = false;
+        closeApiModal();
+        checkHealth();
+        runAudit();
+      });
+    }
+
+    if (saveApiUrlBtn) {
+      saveApiUrlBtn.addEventListener("click", async () => {
+        const url = apiUrlInput.value.trim().replace(/\/$/, "");
+        apiModalStatus.hidden = false;
+        apiModalStatus.innerHTML = '<span class="spinner" style="display:inline-block; vertical-align:middle; margin-right:6px;"></span> Testing connection...';
+        apiModalStatus.style.color = "var(--cyan)";
+
+        try {
+          const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) });
+          const ct = res.headers.get("content-type") || "";
+          if (res.ok && ct.includes("application/json")) {
+            const data = await res.json();
+            customApiBaseUrl = url;
+            localStorage.setItem("claimgraph_api_url", url);
+            if (apiBackendText) apiBackendText.textContent = `Remote API (${new URL(url).host})`;
+            backendAvailable = true;
+            apiModalStatus.textContent = `✓ Successfully connected to ${data.model || "CLAIM GRAPH"} backend!`;
+            apiModalStatus.style.color = "var(--emerald)";
+            setTimeout(() => {
+              closeApiModal();
+              checkHealth();
+              runAudit();
+            }, 800);
+            return;
+          }
+          throw new Error("Endpoint did not return valid JSON health response");
+        } catch (err) {
+          apiModalStatus.textContent = `Connection failed: ${err.message}. Using client-side engine.`;
+          apiModalStatus.style.color = "var(--rose)";
+        }
+      });
+    }
+
+    // --- EXPORT REPORT ---
     exportReportBtn.addEventListener("click", () => {
       if (!currentAuditData) {
         alert("Please run an intelligence audit first before exporting.");
@@ -1705,7 +2447,7 @@
       URL.revokeObjectURL(url);
     });
 
-    // Helper HTML escape
+    // --- HELPER HTML ESCAPE ---
     function escapeHtml(str) {
       if (!str) return "";
       return String(str)
@@ -1716,7 +2458,7 @@
         .replace(/'/g, "&#39;");
     }
 
-    // Initialize on load
+    // --- INITIALIZE ON LOAD ---
     window.addEventListener("DOMContentLoaded", () => {
       checkHealth();
       runAudit();
