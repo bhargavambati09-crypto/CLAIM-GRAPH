@@ -418,20 +418,6 @@ class ClaimGraphHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:
-        if self.path == "/favicon.ico":
-            self._send(204, "image/x-icon", b"")
-            return
-
-        if self.path in ["/", "/index.html"]:
-            try:
-                body = INDEX_FILE.read_bytes()
-            except OSError:
-                logging.exception("Could not read index.html")
-                self._send_json(500, {"error": "Could not load index.html."})
-                return
-            self._send(200, "text/html; charset=utf-8", body)
-            return
-
         if self.path in ["/health", "/api/status"]:
             client = OllamaClient(host="http://127.0.0.1:11434")
             ollama_online = client.is_available()
@@ -450,6 +436,35 @@ class ClaimGraphHandler(BaseHTTPRequestHandler):
                 "scenarios": list(SCENARIOS.values())
             })
             return
+
+        # Static file handling (HTML, CSS, JS, Assets, Images)
+        clean_path = self.path.split("?")[0].lstrip("/")
+        if not clean_path or clean_path == "index.html":
+            file_to_serve = BASE_DIR / "index.html"
+        else:
+            file_to_serve = (BASE_DIR / clean_path).resolve()
+
+        if file_to_serve.is_file() and str(file_to_serve).startswith(str(BASE_DIR)):
+            suffix = file_to_serve.suffix.lower()
+            content_types = {
+                ".html": "text/html; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".js": "application/javascript; charset=utf-8",
+                ".json": "application/json; charset=utf-8",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+                ".svg": "image/svg+xml",
+                ".ico": "image/x-icon",
+            }
+            ctype = content_types.get(suffix, "application/octet-stream")
+            try:
+                body = file_to_serve.read_bytes()
+                self._send(200, ctype, body)
+                return
+            except OSError:
+                pass
 
         self._send_json(404, {"error": "Endpoint not found."})
 
